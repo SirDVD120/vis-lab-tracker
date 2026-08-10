@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { formatQuantity } from "@/lib/format";
 import { ReturnForm, SignOutForm } from "@/components/SignOutForms";
+import { SignOutLookup } from "@/components/SignOutLookup";
 
 export default async function SignOutPage({
   searchParams,
@@ -20,6 +21,8 @@ export default async function SignOutPage({
           where: {
             hidden: false,
             OR: [
+              { sku: { equals: q, mode: "insensitive" } },
+              { barcode: { equals: q, mode: "insensitive" } },
               { sku: { contains: q, mode: "insensitive" } },
               { barcode: { contains: q, mode: "insensitive" } },
               { name: { contains: q, mode: "insensitive" } },
@@ -46,8 +49,8 @@ export default async function SignOutPage({
         <p className="eyebrow">Workflow</p>
         <h1>Sign out</h1>
         <p className="lede">
-          Type a SKU or item name, take what you need, then record how much comes
-          back. Consumable usage helps spot what to order before lessons.
+          Type a SKU, scan a barcode, or search by name — then take what you need and
+          record how much comes back.
         </p>
       </section>
 
@@ -68,28 +71,7 @@ export default async function SignOutPage({
             <h2>Find item by SKU</h2>
           </div>
           <div className="panel__body stack-sm">
-            <form className="toolbar" action="/sign-out" method="get">
-              <div className="toolbar__grow field">
-                <label htmlFor="q" style={{ position: "absolute", left: "-9999px" }}>
-                  SKU or name
-                </label>
-                <input
-                  id="q"
-                  name="q"
-                  type="search"
-                  defaultValue={q}
-                  placeholder="e.g. 10012 or Beaker"
-                  autoComplete="off"
-                  enterKeyHint="search"
-                  inputMode="search"
-                />
-              </div>
-              <div className="toolbar__actions">
-                <button type="submit" className="btn btn-ghost">
-                  Find
-                </button>
-              </div>
-            </form>
+            <SignOutLookup defaultQuery={q} />
 
             {user?.canSignOut ? (
               q ? (
@@ -106,7 +88,7 @@ export default async function SignOutPage({
                 />
               ) : (
                 <p className="muted" style={{ margin: 0 }}>
-                  Enter a SKU to sign something out.
+                  Enter a SKU or scan a barcode to sign something out.
                 </p>
               )
             ) : null}
