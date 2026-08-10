@@ -72,3 +72,33 @@ export async function inventoryCounts() {
     openSignOuts,
   };
 }
+
+/** Compact lists for the home “needs attention” section */
+export async function homeAttention() {
+  const [restockCandidates, openSignOuts] = await Promise.all([
+    prisma.item.findMany({
+      where: {
+        hidden: false,
+        excludeFromRestock: false,
+      },
+      include: { location: true },
+      orderBy: [{ kind: "asc" }, { name: "asc" }],
+      take: 80,
+    }),
+    prisma.signOut.findMany({
+      where: { status: { in: ["OPEN", "PARTIAL"] } },
+      include: {
+        item: true,
+        user: { select: { name: true } },
+      },
+      orderBy: { signedOutAt: "desc" },
+      take: 6,
+    }),
+  ]);
+
+  const lowStock = restockCandidates
+    .filter((item) => item.quantity < item.restockThreshold)
+    .slice(0, 6);
+
+  return { lowStock, openSignOuts };
+}
