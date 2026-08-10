@@ -74,9 +74,9 @@
     },
     {
       "name": "David",
-      "role": "ADMIN",
+      "role": "STAFF",
       "canSignOut": true,
-      "canManageUsers": true
+      "canManageUsers": false
     },
     {
       "name": "Russell",

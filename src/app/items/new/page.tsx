@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { requireApprovedPage, isAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getSession, isAdmin } from "@/lib/auth";
 import { ItemForm } from "@/components/ItemForm";
+import Link from "next/link";
 
 export default async function NewItemPage({
   searchParams,
@@ -10,9 +10,9 @@ export default async function NewItemPage({
   searchParams: Promise<{ kind?: string }>;
 }) {
   const params = await searchParams;
-  const user = await getSession();
+  const user = await requireApprovedPage();
   if (!isAdmin(user)) {
-    redirect("/account");
+    redirect("/");
   }
 
   const kind = params.kind === "CONSUMABLE" ? "CONSUMABLE" : "EQUIPMENT";

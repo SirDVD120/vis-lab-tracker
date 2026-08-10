@@ -15,7 +15,11 @@ enum ItemKind {
 enum UserRole {
   STAFF
   HOD
-  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
 }
 
 enum SignOutStatus {
@@ -25,15 +29,32 @@ enum SignOutStatus {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  name           String   @unique
-  role           UserRole @default(STAFF)
-  canSignOut     Boolean  @default(true)
-  canManageUsers Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id             String     @id @default(cuid())
+  name           String     @unique
+  role           UserRole   @default(STAFF)
+  status         UserStatus @default(PENDING)
+  /// Can sign items out / quick-adjust stock
+  canSignOut     Boolean    @default(false)
+  /// Can edit catalog, stock take, locations (not user approval — that is HOD-only)
+  canManageUsers Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  signOuts SignOut[] @relation("SignedOutBy")
+  googleAccounts GoogleAccount[]
+  signOuts       SignOut[]       @relation("SignedOutBy")
+}
+
+model GoogleAccount {
+  id        String   @id @default(cuid())
+  googleSub String   @unique
+  email     String
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
 }
 
 model Location {
@@ -45,28 +66,28 @@ model Location {
 }
 
 model Item {
-  id                String   @id @default(cuid())
-  kind              ItemKind
-  sku               String   @unique
-  barcode           String?
-  name              String
-  unit              String   @default("count")
-  quantity          Float    @default(0)
-  packageAmount     Float?
-  restockThreshold  Float    @default(0)
-  excludeFromRestock Boolean @default(false)
-  hidden            Boolean  @default(false)
-  notes             String   @default("")
-  sdsFilename       String?
-  imageUrl          String?
-  purchaseLink      String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  kind               ItemKind
+  sku                String   @unique
+  barcode            String?
+  name               String
+  unit               String   @default("count")
+  quantity           Float    @default(0)
+  packageAmount      Float?
+  restockThreshold   Float    @default(0)
+  excludeFromRestock Boolean  @default(false)
+  hidden             Boolean  @default(false)
+  notes              String   @default("")
+  sdsFilename        String?
+  imageUrl           String?
+  purchaseLink       String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   locationId String?
   location   Location? @relation(fields: [locationId], references: [id])
 
-  signOuts        SignOut[]
+  signOuts         SignOut[]
   stockAdjustments StockAdjustment[]
 
   @@index([kind, hidden])
@@ -74,13 +95,13 @@ model Item {
 }
 
 model SignOut {
-  id              String        @id @default(cuid())
-  amountTaken     Float
-  amountReturned  Float         @default(0)
-  status          SignOutStatus @default(OPEN)
-  signedOutAt     DateTime      @default(now())
-  returnedAt      DateTime?
-  notes           String        @default("")
+  id             String        @id @default(cuid())
+  amountTaken    Float
+  amountReturned Float         @default(0)
+  status         SignOutStatus @default(OPEN)
+  signedOutAt    DateTime      @default(now())
+  returnedAt     DateTime?
+  notes          String        @default("")
 
   itemId String
   item   Item   @relation(fields: [itemId], references: [id])
@@ -93,13 +114,13 @@ model SignOut {
 }
 
 model StockAdjustment {
-  id        String   @id @default(cuid())
+  id            String   @id @default(cuid())
   /// Positive = added/restocked, negative = removed/broken/used in stock take
-  delta     Float
-  reason    String
+  delta         Float
+  reason        String
   quantityAfter Float
-  createdAt DateTime @default(now())
-  createdBy String?
+  createdAt     DateTime @default(now())
+  createdBy     String?
 
   itemId String
   item   Item   @relation(fields: [itemId], references: [id])

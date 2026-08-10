@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
 import { roleLabel } from "@/lib/format";
-import { clearAccountAction } from "@/actions/auth";
+import { googleSignOutAction } from "@/actions/auth";
 
 const links = [
   { href: "/", label: "Home", short: "Home" },
@@ -21,34 +21,37 @@ function isActive(pathname: string, href: string) {
 
 export function SiteHeader({ user }: { user: SessionUser | null }) {
   const pathname = usePathname();
+  const hideNav = ["/login", "/claim", "/pending"].includes(pathname);
 
   return (
     <>
       <header className="site-header">
         <div className="site-header__brand">
-          <Link href="/" className="brand-mark">
+          <Link href={user ? "/" : "/login"} className="brand-mark">
             VIS Lab Tracker
           </Link>
           <p className="site-header__meta">Science department inventory</p>
         </div>
 
         <div className="site-header__end">
-          <nav className="site-header__nav site-header__nav--desktop" aria-label="Main">
-            {links.slice(1).map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={isActive(pathname, link.href) ? "is-active" : undefined}
-              >
-                {link.label}
-              </Link>
-            ))}
-            {user?.canManageUsers ? (
-              <Link href="/users" className={isActive(pathname, "/users") ? "is-active" : undefined}>
-                Users
-              </Link>
-            ) : null}
-          </nav>
+          {!hideNav && user ? (
+            <nav className="site-header__nav site-header__nav--desktop" aria-label="Main">
+              {links.slice(1).map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={isActive(pathname, link.href) ? "is-active" : undefined}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              {user.role === "HOD" ? (
+                <Link href="/users" className={isActive(pathname, "/users") ? "is-active" : undefined}>
+                  Users
+                </Link>
+              ) : null}
+            </nav>
+          ) : null}
 
           <div className="site-header__account">
             {user ? (
@@ -57,43 +60,38 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
                   {user.name}
                   <em>{roleLabel(user.role)}</em>
                 </span>
-                <Link href="/account" className="btn btn-ghost btn-sm">
-                  Switch
-                </Link>
-                <form action={clearAccountAction}>
+                <form action={googleSignOutAction}>
                   <button type="submit" className="btn btn-ghost btn-sm">
-                    Clear
+                    Sign out
                   </button>
                 </form>
               </>
-            ) : (
-              <Link href="/account" className="btn btn-ghost btn-sm">
-                Choose account
-              </Link>
-            )}
+            ) : null}
           </div>
         </div>
       </header>
 
-      <nav className="mobile-nav" aria-label="Primary">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={isActive(pathname, link.href) ? "is-active" : undefined}
-          >
-            <span>{link.short}</span>
-          </Link>
-        ))}
-        {user?.canManageUsers ? (
-          <Link
-            href="/users"
-            className={isActive(pathname, "/users") ? "is-active" : undefined}
-          >
-            <span>Users</span>
-          </Link>
-        ) : null}
-      </nav>
+      {!hideNav && user ? (
+        <nav className="mobile-nav" aria-label="Primary">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={isActive(pathname, link.href) ? "is-active" : undefined}
+            >
+              <span>{link.short}</span>
+            </Link>
+          ))}
+          {user.role === "HOD" ? (
+            <Link
+              href="/users"
+              className={isActive(pathname, "/users") ? "is-active" : undefined}
+            >
+              <span>Users</span>
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </>
   );
 }

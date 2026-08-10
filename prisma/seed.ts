@@ -82,13 +82,21 @@ async function main() {
 
   console.log("Seeding users...");
   for (const user of data.users) {
+    const role = user.role === "HOD" || user.name === "Mark" ? "HOD" : "STAFF";
     await prisma.user.upsert({
       where: { name: user.name },
-      create: user,
-      update: {
-        role: user.role,
+      create: {
+        name: user.name,
+        role,
+        status: "APPROVED",
         canSignOut: user.canSignOut,
-        canManageUsers: user.canManageUsers,
+        canManageUsers: role === "HOD" || user.canManageUsers,
+      },
+      update: {
+        role,
+        status: "APPROVED",
+        canSignOut: user.canSignOut,
+        canManageUsers: role === "HOD" || user.canManageUsers,
       },
     });
   }

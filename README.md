@@ -10,8 +10,8 @@ Science department inventory tracker for equipment and consumables.
 - Restock page + red highlighting when stock is below threshold
 - Hide discontinued items; “no reorder” excludes restock alerts
 - SDS / image / purchase link on the item detail page
-- Temporary account switcher until Google Auth
-- Mobile-friendly layout with bottom navigation
+- Google sign-in with HOD approval (school or personal accounts)
+- Mobile-friendly layout with bottom navigation + barcode scan
 
 ## Quick start (local)
 
@@ -29,30 +29,26 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Accounts (temporary)
+## Accounts
 
-Use **Choose account** / **Switch** in the header:
+Sign in with **Google** (school or personal). New users enter their name and wait for **HOD approval**.
 
-| Name | Notes |
-|------|--------|
-| Mark | Head of Department — can manage users |
-| David | Admin — can manage users |
-| Ethan, Nikki, Russell, Jonathan | Can sign out |
+See [docs/GOOGLE_AUTH.md](docs/GOOGLE_AUTH.md) for Google Cloud OAuth setup.
 
 ## Deploy (Neon + Vercel)
 
 1. Create a [Neon](https://console.neon.tech) project and copy connection strings from **Connect**:
    - **Pooled** (host contains `-pooler`) → `DATABASE_URL`
    - **Direct** (same host without `-pooler`) → `DIRECT_URL`
-2. Import the GitHub repo into Vercel and set environment variables:
-   - `DATABASE_URL`
-   - `DIRECT_URL`
-   - `AUTH_SECRET` — any long random string
-3. Deploy. The build runs `prisma migrate deploy` automatically.
-4. Seed once from your machine (against Neon):
+2. Set up Google OAuth (see [docs/GOOGLE_AUTH.md](docs/GOOGLE_AUTH.md))
+3. Import the GitHub repo into Vercel and set environment variables:
+   - `DATABASE_URL`, `DIRECT_URL`
+   - `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
+   - `HOD_BOOTSTRAP_EMAILS` — your email(s) for the first HOD
+4. Deploy. The build runs `prisma migrate deploy` automatically.
+5. Seed inventory once if needed:
 
 ```bash
-# Point .env at Neon, then:
 npx prisma migrate deploy
 npm run db:seed
 ```
@@ -62,4 +58,4 @@ npm run db:seed
 - Next.js (App Router)
 - Prisma + PostgreSQL (Neon)
 - Tailwind CSS
-- Cookie session (account switcher for now)
+- Cookie sessions via Auth.js (Google)

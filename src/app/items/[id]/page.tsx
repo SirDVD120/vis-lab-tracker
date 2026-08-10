@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { prisma } from "@/lib/prisma";
-import { getSession, isAdmin } from "@/lib/auth";
+import { getSession, isAdmin, requireApprovedPage } from "@/lib/auth";
 import { formatQuantity, kindLabel, needsRestock } from "@/lib/format";
 import { ItemForm } from "@/components/ItemForm";
 import { StockControls } from "@/components/StockControls";
@@ -22,6 +22,7 @@ export default async function ItemDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  await requireApprovedPage();
   const [item, locations, user] = await Promise.all([
     prisma.item.findUnique({
       where: { id },
@@ -169,7 +170,7 @@ export default async function ItemDetailPage({
                   Choose an account to adjust stock when buying or something breaks.
                 </p>
                 <Link
-                  href="/account"
+                  href="/login"
                   className="btn btn-ghost btn-sm"
                   style={{ marginTop: "0.75rem" }}
                 >

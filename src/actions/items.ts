@@ -5,7 +5,6 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
   requireAdmin,
-  requireManageUsers,
   requireSession,
   requireSignOutPermission,
 } from "@/lib/auth";
@@ -101,7 +100,6 @@ export async function updateItemAction(formData: FormData) {
   const existing = await prisma.item.findUnique({ where: { id } });
   if (!existing) throw new Error("Item not found");
 
-  // SKU and barcode are immutable after create
   const parsed = parseItemForm(formData, existing.sku, existing.barcode);
 
   await prisma.item.update({
@@ -213,35 +211,4 @@ export async function createLocationAction(formData: FormData) {
   revalidatePath("/equipment");
   revalidatePath("/consumables");
   revalidatePath("/items/new");
-}
-
-export async function updateUserPermissionsAction(formData: FormData) {
-  await requireManageUsers();
-  const id = String(formData.get("id") ?? "");
-  const canSignOut = formData.get("canSignOut") === "on";
-  const canManageUsers = formData.get("canManageUsers") === "on";
-
-  await prisma.user.update({
-    where: { id },
-    data: { canSignOut, canManageUsers },
-  });
-
-  revalidatePath("/users");
-}
-
-export async function addUserAction(formData: FormData) {
-  await requireManageUsers();
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) throw new Error("Name required");
-
-  await prisma.user.create({
-    data: {
-      name,
-      role: "STAFF",
-      canSignOut: true,
-      canManageUsers: false,
-    },
-  });
-
-  revalidatePath("/users");
 }

@@ -1,14 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { inventoryCounts } from "@/lib/data";
-import { getSession, listUsers } from "@/lib/auth";
-import { AccountSwitcher } from "@/components/AccountSwitcher";
+import { requireApprovedPage } from "@/lib/auth";
 
 export default async function HomePage() {
-  const [counts, user, users] = await Promise.all([
-    inventoryCounts(),
-    getSession(),
-    listUsers(),
-  ]);
+  await requireApprovedPage();
+  const counts = await inventoryCounts();
 
   return (
     <main>
@@ -20,20 +17,6 @@ export default async function HomePage() {
           needs restocking before the next lesson.
         </p>
       </section>
-
-      {!user ? (
-        <div className="panel" style={{ marginBottom: "1.5rem" }}>
-          <div className="panel__header">
-            <h2>Choose an account to continue</h2>
-          </div>
-          <div className="panel__body">
-            <p className="muted" style={{ marginTop: 0 }}>
-              Temporary switcher until Google Auth. Pick who you are testing as.
-            </p>
-            <AccountSwitcher users={users} activeUserId={null} />
-          </div>
-        </div>
-      ) : null}
 
       <div className="stats-row">
         <Link href="/equipment" className="stat">

@@ -1,96 +1,103 @@
-import { cookies } from "next/headers";
-import { SignJWT, jwtVerify } from "jose";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { User } from "@/generated/prisma/client";
-
-const COOKIE_NAME = "lab_session";
-const SESSION_DAYS = 30;
+import { redirect } from "next/navigation";
 
 export type SessionUser = {
   id: string;
   name: string;
   role: User["role"];
+  status: User["status"];
   canSignOut: boolean;
   canManageUsers: boolean;
+  email?: string;
 };
 
-function getSecret() {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) {
-    throw new Error("AUTH_SECRET is not set");
-  }
-  return new TextEncoder().encode(secret);
-}
+export type GoogleIdentity = {
+  sub: string;
+  email: string;
+  name?: string | null;
+};
 
-function toSessionUser(user: User): SessionUser {
+export type AuthState =
+  | { status: "anonymous" }
+  | { status: "unclaimed"; google: GoogleIdentity }
+  | { status: "pending"; user: SessionUser; google: GoogleIdentity }
+  | { status: "approved"; user: SessionUser; google: GoogleIdentity };
+
+function toSessionUser(user: User, email?: string): SessionUser {
   return {
     id: user.id,
     name: user.name,
     role: user.role,
+    status: user.status,
     canSignOut: user.canSignOut,
     canManageUsers: user.canManageUsers,
+    email,
   };
 }
 
-export async function createSession(user: SessionUser) {
-  const token = await new SignJWT({
-    id: user.id,
-    name: user.name,
-    role: user.role,
-    canSignOut: user.canSignOut,
-    canManageUsers: user.canManageUsers,
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(`${SESSION_DAYS}d`)
-    .sign(getSecret());
-
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_DAYS * 24 * 60 * 60,
-  });
+function bootstrapEmails() {
+  return (process.env.HOD_BOOTSTRAP_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
 }
 
-export async function destroySession() {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+export function isBootstrapHodEmail(email: string) {
+  return bootstrapEmails().includes(email.trim().toLowerCase());
 }
 
-export async function getSession(): Promise<SessionUser | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return null;
+export async function getAuthState(): Promise<AuthState> {
+  const session = await auth();
+  const googleSub = session?.googleSub;
+  const email = session?.user?.email;
 
-  try {
-    const { payload } = await jwtVerify(token, getSecret());
-    if (
-      typeof payload.id !== "string" ||
-      typeof payload.name !== "string" ||
-      typeof payload.role !== "string"
-    ) {
-      return null;
-    }
-
-    return {
-      id: payload.id,
-      name: payload.name,
-      role: payload.role as SessionUser["role"],
-      canSignOut: Boolean(payload.canSignOut),
-      canManageUsers: Boolean(payload.canManageUsers),
-    };
-  } catch {
-    return null;
+  if (!googleSub || !email) {
+    return { status: "anonymous" };
   }
+
+  const google: GoogleIdentity = {
+    sub: googleSub,
+    email,
+    name: session.user?.name,
+  };
+
+  const account = await prisma.googleAccount.findUnique({
+    where: { googleSub },
+    include: { user: true },
+  });
+
+  if (!account) {
+    return { status: "unclaimed", google };
+  }
+
+  const user = toSessionUser(account.user, account.email);
+  if (account.user.status === "APPROVED") {
+    return { status: "approved", user, google };
+  }
+  return { status: "pending", user, google };
+}
+
+/** Approved app user only — null if anonymous / unclaimed / pending */
+export async function getSession(): Promise<SessionUser | null> {
+  const state = await getAuthState();
+  return state.status === "approved" ? state.user : null;
+}
+
+/** Redirect unauthenticated / pending users away from app pages */
+export async function requireApprovedPage() {
+  const state = await getAuthState();
+  if (state.status === "anonymous") redirect("/login");
+  if (state.status === "unclaimed") redirect("/claim");
+  if (state.status === "pending") redirect("/pending");
+  return state.user;
 }
 
 export async function requireSession() {
   const user = await getSession();
   if (!user) {
-    throw new Error("Select an account first");
+    throw new Error("Sign in required");
   }
   return user;
 }
@@ -103,37 +110,35 @@ export async function requireSignOutPermission() {
   return user;
 }
 
-export async function requireManageUsers() {
+/** Inventory catalog / stock take — HOD or staff with catalog flag */
+export async function requireAdmin() {
   const user = await requireSession();
-  if (!user.canManageUsers) {
-    throw new Error("Only HOD or Admin can manage authorised users");
+  if (!isAdmin(user)) {
+    throw new Error("Only HOD or catalog managers can do this");
   }
   return user;
 }
 
-/** HOD / Admin — edit catalog, stock take, locations */
-export async function requireAdmin() {
+/** Approve users / change roles — HOD only */
+export async function requireHod() {
   const user = await requireSession();
-  if (!user.canManageUsers) {
-    throw new Error("Only HOD or Admin can do this");
+  if (!isHod(user)) {
+    throw new Error("Only HOD can manage users");
   }
   return user;
+}
+
+export function isHod(user: SessionUser | null) {
+  return user?.role === "HOD";
 }
 
 export function isAdmin(user: SessionUser | null) {
-  return Boolean(user?.canManageUsers);
-}
-
-export async function switchToUser(userId: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return null;
-  const session = toSessionUser(user);
-  await createSession(session);
-  return session;
+  return Boolean(user && (user.role === "HOD" || user.canManageUsers));
 }
 
 export async function listUsers() {
   return prisma.user.findMany({
-    orderBy: { name: "asc" },
+    include: { googleAccounts: { orderBy: { createdAt: "asc" } } },
+    orderBy: [{ status: "asc" }, { name: "asc" }],
   });
 }
