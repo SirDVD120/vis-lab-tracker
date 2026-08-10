@@ -1,0 +1,84 @@
+import Link from "next/link";
+import { inventoryCounts } from "@/lib/data";
+import { getSession, listUsers } from "@/lib/auth";
+import { AccountSwitcher } from "@/components/AccountSwitcher";
+
+export default async function HomePage() {
+  const [counts, user, users] = await Promise.all([
+    inventoryCounts(),
+    getSession(),
+    listUsers(),
+  ]);
+
+  return (
+    <main>
+      <section className="page-hero">
+        <p className="eyebrow">VIS Science</p>
+        <h1>Lab inventory at a glance</h1>
+        <p className="lede">
+          Browse equipment and consumables, sign items out by SKU, and spot what
+          needs restocking before the next lesson.
+        </p>
+      </section>
+
+      {!user ? (
+        <div className="panel" style={{ marginBottom: "1.5rem" }}>
+          <div className="panel__header">
+            <h2>Choose an account to continue</h2>
+          </div>
+          <div className="panel__body">
+            <p className="muted" style={{ marginTop: 0 }}>
+              Temporary switcher until Google Auth. Pick who you are testing as.
+            </p>
+            <AccountSwitcher users={users} activeUserId={null} />
+          </div>
+        </div>
+      ) : null}
+
+      <div className="stats-row">
+        <Link href="/equipment" className="stat">
+          <p className="stat__label">Equipment</p>
+          <p className="stat__value">{counts.equipment}</p>
+        </Link>
+        <Link href="/consumables" className="stat">
+          <p className="stat__label">Consumables</p>
+          <p className="stat__value">{counts.consumables}</p>
+        </Link>
+        <Link
+          href="/restock"
+          className={`stat ${counts.restock ? "stat--alert" : ""}`}
+        >
+          <p className="stat__label">Need restock</p>
+          <p className="stat__value">{counts.restock}</p>
+        </Link>
+        <Link href="/sign-out" className="stat">
+          <p className="stat__label">Open sign-outs</p>
+          <p className="stat__value">{counts.openSignOuts}</p>
+        </Link>
+      </div>
+
+      <div className="home-grid">
+        <Link href="/equipment" className="home-card">
+          <p className="eyebrow">Catalog</p>
+          <h2>Equipment</h2>
+          <p>Glassware, tools, and reusable lab gear with current stock levels.</p>
+        </Link>
+        <Link href="/consumables" className="home-card">
+          <p className="eyebrow">Catalog</p>
+          <h2>Consumables</h2>
+          <p>Chemicals and supplies with per-item units and SDS details.</p>
+        </Link>
+        <Link href="/sign-out" className="home-card">
+          <p className="eyebrow">Workflow</p>
+          <h2>Sign out</h2>
+          <p>Find an item by SKU, take what you need, and record returns.</p>
+        </Link>
+        <Link href="/restock" className="home-card">
+          <p className="eyebrow">Alerts</p>
+          <h2>Restock</h2>
+          <p>Everything currently below its restock threshold, highlighted in red.</p>
+        </Link>
+      </div>
+    </main>
+  );
+}

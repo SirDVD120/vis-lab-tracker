@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ItemKind {
+  EQUIPMENT
+  CONSUMABLE
+}
+
+enum UserRole {
+  STAFF
+  HOD
+  ADMIN
+}
+
+enum SignOutStatus {
+  OPEN
+  RETURNED
+  PARTIAL
+}
+
+model User {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  role           UserRole @default(STAFF)
+  canSignOut     Boolean  @default(true)
+  canManageUsers Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  signOuts SignOut[] @relation("SignedOutBy")
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  items Item[]
+}
+
+model Item {
+  id                String   @id @default(cuid())
+  kind              ItemKind
+  sku               String   @unique
+  barcode           String?
+  name              String
+  unit              String   @default("count")
+  quantity          Float    @default(0)
+  packageAmount     Float?
+  restockThreshold  Float    @default(0)
+  excludeFromRestock Boolean @default(false)
+  hidden            Boolean  @default(false)
+  notes             String   @default("")
+  sdsFilename       String?
+  imageUrl          String?
+  purchaseLink      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id])
+
+  signOuts        SignOut[]
+  stockAdjustments StockAdjustment[]
+
+  @@index([kind, hidden])
+  @@index([name])
+}
+
+model SignOut {
+  id              String        @id @default(cuid())
+  amountTaken     Float
+  amountReturned  Float         @default(0)
+  status          SignOutStatus @default(OPEN)
+  signedOutAt     DateTime      @default(now())
+  returnedAt      DateTime?
+  notes           String        @default("")
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id])
+
+  userId String
+  user   User   @relation("SignedOutBy", fields: [userId], references: [id])
+
+  @@index([status, signedOutAt])
+  @@index([itemId])
+}
+
+model StockAdjustment {
+  id        String   @id @default(cuid())
+  /// Positive = added/restocked, negative = removed/broken/used in stock take
+  delta     Float
+  reason    String
+  quantityAfter Float
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id])
+
+  @@index([itemId, createdAt])
+}
