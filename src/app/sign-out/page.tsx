@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { prisma } from "@/lib/prisma";
-import { getSession, requireApprovedPage } from "@/lib/auth";
+import { getSession, requireStaffPage } from "@/lib/auth";
 import { formatQuantity } from "@/lib/format";
 import { ReturnForm, SignOutForm } from "@/components/SignOutForms";
 import { SignOutLookup } from "@/components/SignOutLookup";
@@ -13,7 +13,7 @@ export default async function SignOutPage({
 }) {
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
-  await requireApprovedPage();
+  await requireStaffPage();
   const user = await getSession();
 
   const [matches, openSignOuts] = await Promise.all([

@@ -2,10 +2,10 @@ import Link from "next/link";
 import { ItemTable } from "@/components/ItemTable";
 import { prisma } from "@/lib/prisma";
 import { needsRestock } from "@/lib/format";
-import { requireApprovedPage } from "@/lib/auth";
+import { requireStaffPage } from "@/lib/auth";
 
 export default async function RestockPage() {
-  await requireApprovedPage();
+  await requireStaffPage();
   const items = await prisma.item.findMany({
     where: {
       hidden: false,

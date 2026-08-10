@@ -73,7 +73,7 @@ export async function getAuthState(): Promise<AuthState> {
   }
 
   const user = toSessionUser(account.user, account.email);
-  if (account.user.status === "APPROVED") {
+  if (account.user.status === "APPROVED" && account.status === "APPROVED") {
     return { status: "approved", user, google };
   }
   return { status: "pending", user, google };
@@ -94,6 +94,13 @@ export async function requireApprovedPage() {
   return state.user;
 }
 
+/** Staff/HOD pages — students are browse-only */
+export async function requireStaffPage() {
+  const user = await requireApprovedPage();
+  if (isStudent(user)) redirect("/");
+  return user;
+}
+
 export async function requireSession() {
   const user = await getSession();
   if (!user) {
@@ -104,7 +111,7 @@ export async function requireSession() {
 
 export async function requireSignOutPermission() {
   const user = await requireSession();
-  if (!user.canSignOut) {
+  if (isStudent(user) || !user.canSignOut) {
     throw new Error("You are not authorised to sign items out");
   }
   return user;
@@ -130,6 +137,10 @@ export async function requireHod() {
 
 export function isHod(user: SessionUser | null) {
   return user?.role === "HOD";
+}
+
+export function isStudent(user: SessionUser | null) {
+  return user?.role === "STUDENT";
 }
 
 export function isAdmin(user: SessionUser | null) {

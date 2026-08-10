@@ -6,12 +6,18 @@ import type { SessionUser } from "@/lib/auth";
 import { roleLabel } from "@/lib/format";
 import { googleSignOutAction } from "@/actions/auth";
 
-const links = [
+const staffLinks = [
   { href: "/", label: "Home", short: "Home" },
   { href: "/equipment", label: "Equipment", short: "Equip" },
   { href: "/consumables", label: "Consumables", short: "Consum." },
   { href: "/sign-out", label: "Sign out", short: "Out" },
   { href: "/restock", label: "Restock", short: "Restock" },
+];
+
+const studentLinks = [
+  { href: "/", label: "Home", short: "Home" },
+  { href: "/equipment", label: "Equipment", short: "Equip" },
+  { href: "/consumables", label: "Consumables", short: "Consum." },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -22,6 +28,7 @@ function isActive(pathname: string, href: string) {
 export function SiteHeader({ user }: { user: SessionUser | null }) {
   const pathname = usePathname();
   const hideNav = ["/login", "/claim", "/pending"].includes(pathname);
+  const links = user?.role === "STUDENT" ? studentLinks : staffLinks;
 
   return (
     <>

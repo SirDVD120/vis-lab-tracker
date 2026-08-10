@@ -65,5 +65,9 @@ Redeploy after saving.
 
 1. Sign in with the second Google account
 2. Enter the **same name** as before
-3. If that name is already approved, the new Google account is linked and works right away
-4. HOD can **Unlink** a Google address from **Users** if needed
+3. The new Google account stays **pending** until a HOD approves it under **Users → Pending Google links**
+4. HOD can **Reject** / **Unlink** a Google address from **Users** if needed
+
+## 5. Lab club students
+
+On first sign-in, choose **Lab club student**. After HOD approval they can browse equipment and consumables only (no sign-out, restock, or catalog edits). HOD can also set someone’s role to student later.

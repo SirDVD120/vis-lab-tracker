@@ -21,5 +21,6 @@ export function kindLabel(kind: ItemKind) {
 
 export function roleLabel(role: string) {
   if (role === "HOD") return "Head of Department";
+  if (role === "STUDENT") return "Lab club student";
   return "Staff";
 }

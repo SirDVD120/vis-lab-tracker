@@ -15,8 +15,8 @@ export default async function ClaimPage() {
         <h1>What&apos;s your name?</h1>
         <p className="lede">
           Signed in as <strong>{state.google.email}</strong>. Enter the name your
-          department knows you by. If you already have an approved account, use the
-          same name to link this Google login.
+          department knows you by. Linking a second Google account to an existing name
+          still needs HOD approval.
         </p>
       </section>
 
@@ -34,6 +34,17 @@ export default async function ClaimPage() {
                 defaultValue={state.google.name?.split(" ")[0] ?? ""}
               />
             </div>
+            <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend style={{ fontWeight: 600, marginBottom: "0.35rem" }}>I am a</legend>
+              <label className="checkbox-row">
+                <input type="radio" name="accountType" value="STAFF" defaultChecked />
+                Teacher / staff
+              </label>
+              <label className="checkbox-row">
+                <input type="radio" name="accountType" value="STUDENT" />
+                Lab club student (browse only)
+              </label>
+            </fieldset>
             <div className="form-actions">
               <button type="submit" className="btn btn-primary">
                 Request access

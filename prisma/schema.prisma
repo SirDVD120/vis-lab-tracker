@@ -14,10 +14,16 @@ enum ItemKind {
 
 enum UserRole {
   STAFF
+  STUDENT
   HOD
 }
 
 enum UserStatus {
+  PENDING
+  APPROVED
+}
+
+enum GoogleAccountStatus {
   PENDING
   APPROVED
 }
@@ -45,16 +51,18 @@ model User {
 }
 
 model GoogleAccount {
-  id        String   @id @default(cuid())
-  googleSub String   @unique
+  id        String              @id @default(cuid())
+  googleSub String              @unique
   email     String
-  createdAt DateTime @default(now())
+  status    GoogleAccountStatus @default(PENDING)
+  createdAt DateTime            @default(now())
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([email])
+  @@index([status])
 }
 
 model Location {
