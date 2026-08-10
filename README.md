@@ -39,21 +39,20 @@ Use **Choose account** / **Switch** in the header:
 | David | Admin — can manage users |
 | Ethan, Nikki, Russell, Jonathan | Can sign out |
 
-## Deploy (Supabase + Vercel)
+## Deploy (Neon + Vercel)
 
-1. Create a Supabase project.
-2. In **Project Settings → Database**, copy:
-   - **Transaction pooler** URL → `DATABASE_URL` (port `6543`, add `?pgbouncer=true`)
-   - **Direct / Session** URL → `DIRECT_URL` (port `5432`)
-3. Import the GitHub repo into Vercel and set environment variables:
+1. Create a [Neon](https://console.neon.tech) project and copy connection strings from **Connect**:
+   - **Pooled** (host contains `-pooler`) → `DATABASE_URL`
+   - **Direct** (same host without `-pooler`) → `DIRECT_URL`
+2. Import the GitHub repo into Vercel and set environment variables:
    - `DATABASE_URL`
    - `DIRECT_URL`
    - `AUTH_SECRET` — any long random string
-4. Deploy. The build runs `prisma migrate deploy` automatically.
-5. Seed once from your machine (against Supabase):
+3. Deploy. The build runs `prisma migrate deploy` automatically.
+4. Seed once from your machine (against Neon):
 
 ```bash
-# Point .env at Supabase, then:
+# Point .env at Neon, then:
 npx prisma migrate deploy
 npm run db:seed
 ```
@@ -61,6 +60,6 @@ npm run db:seed
 ## Stack
 
 - Next.js (App Router)
-- Prisma + PostgreSQL (Supabase)
+- Prisma + PostgreSQL (Neon)
 - Tailwind CSS
 - Cookie session (account switcher for now)
