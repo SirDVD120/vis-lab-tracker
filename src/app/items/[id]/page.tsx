@@ -8,12 +8,29 @@ import { ItemForm } from "@/components/ItemForm";
 import { StockControls } from "@/components/StockControls";
 import { hideItemAction } from "@/actions/items";
 
+function catalogReturnPath(from: string | undefined, kind: "EQUIPMENT" | "CONSUMABLE") {
+  const fallback = kind === "EQUIPMENT" ? "/equipment" : "/consumables";
+  if (!from) return fallback;
+  try {
+    const url = new URL(from, "http://local");
+    if (url.pathname === "/equipment" || url.pathname === "/consumables") {
+      return `${url.pathname}${url.search}`;
+    }
+  } catch {
+    // ignore bad from values
+  }
+  return fallback;
+}
+
 export default async function ItemDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { id } = await params;
+  const { from } = await searchParams;
   await requireApprovedPage();
   const [item, locations, user] = await Promise.all([
     prisma.item.findUnique({
@@ -42,6 +59,7 @@ export default async function ItemDetailPage({
   const canQuickAdjust = Boolean(user?.canSignOut);
   const showStockPanel = admin || canQuickAdjust;
   const showManage = showStockPanel || admin;
+  const backHref = catalogReturnPath(from, item.kind);
 
   return (
     <main>
@@ -83,10 +101,7 @@ export default async function ItemDetailPage({
               Sign out
             </Link>
           ) : null}
-          <Link
-            href={item.kind === "EQUIPMENT" ? "/equipment" : "/consumables"}
-            className="btn btn-ghost btn-sm"
-          >
+          <Link href={backHref} className="btn btn-ghost btn-sm">
             Back to list
           </Link>
         </div>

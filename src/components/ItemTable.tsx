@@ -7,14 +7,22 @@ import { formatQuantity, needsRestock } from "@/lib/format";
 
 type ItemRow = Item & { location: Location | null };
 
+function itemHref(itemId: string, returnTo?: string) {
+  if (!returnTo) return `/items/${itemId}`;
+  return `/items/${itemId}?from=${encodeURIComponent(returnTo)}`;
+}
+
 export function ItemTable({
   items,
   emptyLabel = "No items found.",
   showSignOut = true,
+  returnTo,
 }: {
   items: ItemRow[];
   emptyLabel?: string;
   showSignOut?: boolean;
+  /** Catalog path to return to from the item page (e.g. /equipment?q=beaker) */
+  returnTo?: string;
 }) {
   if (items.length === 0) {
     return <div className="empty">{emptyLabel}</div>;
@@ -24,7 +32,12 @@ export function ItemTable({
     <>
       <div className="item-cards">
         {items.map((item) => (
-          <ItemCard key={item.id} item={item} showSignOut={showSignOut} />
+          <ItemCard
+            key={item.id}
+            item={item}
+            showSignOut={showSignOut}
+            returnTo={returnTo}
+          />
         ))}
       </div>
 
@@ -42,7 +55,12 @@ export function ItemTable({
           </thead>
           <tbody>
             {items.map((item) => (
-              <ItemTableRow key={item.id} item={item} showSignOut={showSignOut} />
+              <ItemTableRow
+                key={item.id}
+                item={item}
+                showSignOut={showSignOut}
+                returnTo={returnTo}
+              />
             ))}
           </tbody>
         </table>
@@ -68,21 +86,24 @@ function ItemBadges({ item, low }: { item: ItemRow; low: boolean }) {
 function ItemCard({
   item,
   showSignOut,
+  returnTo,
 }: {
   item: ItemRow;
   showSignOut: boolean;
+  returnTo?: string;
 }) {
   const router = useRouter();
   const low = needsRestock(item);
+  const href = itemHref(item.id, returnTo);
 
   return (
     <article
       className={`item-card ${low ? "is-restock" : ""}`}
-      onClick={() => router.push(`/items/${item.id}`)}
+      onClick={() => router.push(href)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          router.push(`/items/${item.id}`);
+          router.push(href);
         }
       }}
       tabIndex={0}
@@ -119,22 +140,25 @@ function ItemCard({
 function ItemTableRow({
   item,
   showSignOut,
+  returnTo,
 }: {
   item: ItemRow;
   showSignOut: boolean;
+  returnTo?: string;
 }) {
   const router = useRouter();
   const low = needsRestock(item);
+  const href = itemHref(item.id, returnTo);
 
   return (
     <tr
       className={`is-clickable ${low ? "is-restock" : ""}`}
       tabIndex={0}
-      onClick={() => router.push(`/items/${item.id}`)}
+      onClick={() => router.push(href)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          router.push(`/items/${item.id}`);
+          router.push(href);
         }
       }}
     >

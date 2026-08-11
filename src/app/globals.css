@@ -1279,8 +1279,21 @@ table.data-table {
   }
 }
 
-.search-suggest {
-  position: relative;
+.home-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: stretch;
+  margin: 0 0 1.25rem;
+}
+
+.home-search .search-suggest {
+  flex: 1 1 220px;
+}
+
+.home-search .btn {
+  flex: 0 0 auto;
+  align-self: stretch;
 }
 
 .search-suggest__menu {

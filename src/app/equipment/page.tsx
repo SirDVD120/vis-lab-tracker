@@ -12,6 +12,11 @@ export default async function EquipmentPage({
   const params = await searchParams;
   const includeHidden = params.hidden === "1";
   const query = params.q?.trim() ?? "";
+  const returnTo = query
+    ? `/equipment?q=${encodeURIComponent(query)}${includeHidden ? "&hidden=1" : ""}`
+    : includeHidden
+      ? "/equipment?hidden=1"
+      : "/equipment";
 
   const [user, items, otherItems] = await Promise.all([
     requireApprovedPage(),
@@ -57,7 +62,11 @@ export default async function EquipmentPage({
               {items.length} item{items.length === 1 ? "" : "s"}
             </h2>
           </div>
-          <ItemTable items={items} emptyLabel="No equipment matches that search." />
+          <ItemTable
+            items={items}
+            emptyLabel="No equipment matches that search."
+            returnTo={returnTo}
+          />
         </div>
 
         {query ? (

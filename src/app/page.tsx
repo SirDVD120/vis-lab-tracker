@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { homeAttention, inventoryCounts } from "@/lib/data";
 import { isStudent, requireApprovedPage } from "@/lib/auth";
 import { formatQuantity, kindLabel } from "@/lib/format";
+import { HomeSearch } from "@/components/HomeSearch";
 
 export default async function HomePage() {
   const user = await requireApprovedPage();
@@ -67,6 +68,8 @@ export default async function HomePage() {
         </p>
       </section>
 
+      <HomeSearch />
+
       <div className="home-grid">
         {destinations.map((dest) => (
           <Link
@@ -121,7 +124,12 @@ export default async function HomePage() {
                 <ul className="home-list">
                   {attention.lowStock.map((item) => (
                     <li key={item.id}>
-                      <Link href={`/items/${item.id}`} className="home-list__row">
+                      <Link
+                        href={`/items/${item.id}?from=${encodeURIComponent(
+                          item.kind === "EQUIPMENT" ? "/equipment" : "/consumables",
+                        )}`}
+                        className="home-list__row"
+                      >
                         <span className="home-list__main">
                           <strong>{item.name}</strong>
                           <span className="muted">

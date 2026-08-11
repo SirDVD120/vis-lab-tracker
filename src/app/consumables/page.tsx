@@ -12,6 +12,11 @@ export default async function ConsumablesPage({
   const params = await searchParams;
   const includeHidden = params.hidden === "1";
   const query = params.q?.trim() ?? "";
+  const returnTo = query
+    ? `/consumables?q=${encodeURIComponent(query)}${includeHidden ? "&hidden=1" : ""}`
+    : includeHidden
+      ? "/consumables?hidden=1"
+      : "/consumables";
 
   const [user, items, otherItems] = await Promise.all([
     requireApprovedPage(),
@@ -57,7 +62,11 @@ export default async function ConsumablesPage({
               {items.length} item{items.length === 1 ? "" : "s"}
             </h2>
           </div>
-          <ItemTable items={items} emptyLabel="No consumables match that search." />
+          <ItemTable
+            items={items}
+            emptyLabel="No consumables match that search."
+            returnTo={returnTo}
+          />
         </div>
 
         {query ? (
