@@ -41,6 +41,7 @@ export default async function ItemDetailPage({
   const admin = isAdmin(user);
   const canQuickAdjust = Boolean(user?.canSignOut);
   const showStockPanel = admin || canQuickAdjust;
+  const showManage = showStockPanel || admin;
 
   return (
     <main>
@@ -52,7 +53,15 @@ export default async function ItemDetailPage({
           {item.barcode && item.barcode !== item.sku ? ` · Barcode ${item.barcode}` : ""}
           {item.location ? ` · ${item.location.name}` : ""}
         </p>
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.75rem", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+            marginTop: "0.75rem",
+            alignItems: "center",
+          }}
+        >
           <span className={`badge ${low ? "badge--restock" : "badge--ok"}`}>
             {low ? "Restock" : "OK"}
           </span>
@@ -66,7 +75,7 @@ export default async function ItemDetailPage({
           <span className="badge badge--muted">
             Restock below {formatQuantity(item.restockThreshold, item.unit)}
           </span>
-          {!item.hidden ? (
+          {!item.hidden && user && !isStudentLike(user) ? (
             <Link
               href={`/sign-out?q=${encodeURIComponent(item.sku)}`}
               className="btn btn-primary btn-sm"
@@ -74,122 +83,90 @@ export default async function ItemDetailPage({
               Sign out
             </Link>
           ) : null}
+          <Link
+            href={item.kind === "EQUIPMENT" ? "/equipment" : "/consumables"}
+            className="btn btn-ghost btn-sm"
+          >
+            Back to list
+          </Link>
         </div>
       </section>
 
-      <div className="detail-grid">
-        <div className="stack-sm">
-          <div className="panel">
-            <div className="panel__header">
-              <h2>Details</h2>
-              <Link
-                href={item.kind === "EQUIPMENT" ? "/equipment" : "/consumables"}
-                className="muted"
-              >
-                Back to list
-              </Link>
-            </div>
-            <div className="panel__body stack-sm">
-              {item.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.imageUrl}
-                  alt={item.name}
-                  style={{
-                    width: "100%",
-                    maxHeight: 280,
-                    objectFit: "contain",
-                    borderRadius: 12,
-                    border: "1px solid var(--line)",
-                    background: "var(--surface)",
-                  }}
-                />
-              ) : (
-                <p className="muted" style={{ margin: 0 }}>
-                  No image on file.
-                </p>
-              )}
+      <div className="stack-sm item-detail">
+        <div className="panel">
+          <div className="panel__header">
+            <h2>Item information</h2>
+          </div>
+          <div className="panel__body stack-sm">
+            {item.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.imageUrl}
+                alt={item.name}
+                style={{
+                  width: "100%",
+                  maxHeight: 320,
+                  objectFit: "contain",
+                  borderRadius: 12,
+                  border: "1px solid var(--line)",
+                  background: "var(--surface)",
+                }}
+              />
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                No image on file.
+              </p>
+            )}
 
-              {item.sdsFilename ? (
-                <p className="meta-line" style={{ margin: 0 }}>
-                  <strong>SDS:</strong>{" "}
-                  {item.sdsFilename.startsWith("http") ? (
-                    <a
-                      href={item.sdsFilename}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="external-link"
-                      title={item.sdsFilename}
-                    >
-                      Open SDS
-                    </a>
-                  ) : (
-                    <span className="truncate-text" title={item.sdsFilename}>
-                      {item.sdsFilename}
-                    </span>
-                  )}
-                </p>
-              ) : (
-                <p className="muted" style={{ margin: 0 }}>
-                  No SDS on file.
-                </p>
-              )}
-
-              {item.purchaseLink ? (
-                <p className="meta-line" style={{ margin: 0 }}>
-                  <strong>Purchase:</strong>{" "}
+            {item.sdsFilename ? (
+              <p className="meta-line" style={{ margin: 0 }}>
+                <strong>SDS:</strong>{" "}
+                {item.sdsFilename.startsWith("http") ? (
                   <a
-                    href={item.purchaseLink}
+                    href={item.sdsFilename}
                     target="_blank"
                     rel="noreferrer"
                     className="external-link"
-                    title={item.purchaseLink}
+                    title={item.sdsFilename}
                   >
-                    Open purchase page
+                    Open SDS
                   </a>
-                </p>
-              ) : (
-                <p className="muted" style={{ margin: 0 }}>
-                  No purchase link on file.
-                </p>
-              )}
+                ) : (
+                  <span className="truncate-text" title={item.sdsFilename}>
+                    {item.sdsFilename}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                No SDS on file.
+              </p>
+            )}
 
-              {item.notes ? <p style={{ margin: 0 }}>{item.notes}</p> : null}
-            </div>
-          </div>
-
-          {showStockPanel ? (
-            <div className="panel">
-              <div className="panel__header">
-                <h2>Stock</h2>
-              </div>
-              <div className="panel__body">
-                <StockControls
-                  itemId={item.id}
-                  quantity={item.quantity}
-                  unit={item.unit}
-                  canStockTake={admin}
-                  canQuickAdjust={canQuickAdjust}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="panel">
-              <div className="panel__body">
-                <p className="muted" style={{ margin: 0 }}>
-                  Choose an account to adjust stock when buying or something breaks.
-                </p>
-                <Link
-                  href="/login"
-                  className="btn btn-ghost btn-sm"
-                  style={{ marginTop: "0.75rem" }}
+            {item.purchaseLink ? (
+              <p className="meta-line" style={{ margin: 0 }}>
+                <strong>Purchase:</strong>{" "}
+                <a
+                  href={item.purchaseLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="external-link"
+                  title={item.purchaseLink}
                 >
-                  Choose account
-                </Link>
-              </div>
-            </div>
-          )}
+                  Open purchase page
+                </a>
+              </p>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                No purchase link on file.
+              </p>
+            )}
 
+            {item.notes ? <p style={{ margin: 0 }}>{item.notes}</p> : null}
+          </div>
+        </div>
+
+        <div className="item-detail__activity">
           <div className="panel">
             <div className="panel__header">
               <h2>Recent sign-outs</h2>
@@ -235,31 +212,6 @@ export default async function ItemDetailPage({
               </div>
             )}
           </div>
-        </div>
-
-        <div className="stack-sm">
-          {admin ? (
-            <div className="panel">
-              <div className="panel__header">
-                <h2>Edit item</h2>
-                <form action={hideItemAction}>
-                  <input type="hidden" name="id" value={item.id} />
-                  <input type="hidden" name="hidden" value={item.hidden ? "false" : "true"} />
-                  <button type="submit" className="btn btn-danger btn-sm">
-                    {item.hidden ? "Unhide" : "Hide item"}
-                  </button>
-                </form>
-              </div>
-              <div className="panel__body">
-                <ItemForm
-                  mode="edit"
-                  item={item}
-                  locations={locations}
-                  canManageLocations
-                />
-              </div>
-            </div>
-          ) : null}
 
           <div className="panel">
             <div className="panel__header">
@@ -301,7 +253,70 @@ export default async function ItemDetailPage({
             )}
           </div>
         </div>
+
+        {showManage ? (
+          <section className="item-manage" aria-labelledby="item-manage-heading">
+            <div className="item-manage__intro">
+              <p className="eyebrow">Staff tools</p>
+              <h2 id="item-manage-heading">Manage stock &amp; details</h2>
+              <p className="muted" style={{ margin: 0 }}>
+                Stock take, quick adjustments, and catalog edits live here so the
+                item info above stays easy to read.
+              </p>
+            </div>
+
+            <div className="stack-sm">
+              {showStockPanel ? (
+                <div className="panel">
+                  <div className="panel__header">
+                    <h2>Stock</h2>
+                  </div>
+                  <div className="panel__body">
+                    <StockControls
+                      itemId={item.id}
+                      quantity={item.quantity}
+                      unit={item.unit}
+                      canStockTake={admin}
+                      canQuickAdjust={canQuickAdjust}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {admin ? (
+                <div className="panel">
+                  <div className="panel__header">
+                    <h2>Edit item</h2>
+                    <form action={hideItemAction}>
+                      <input type="hidden" name="id" value={item.id} />
+                      <input
+                        type="hidden"
+                        name="hidden"
+                        value={item.hidden ? "false" : "true"}
+                      />
+                      <button type="submit" className="btn btn-danger btn-sm">
+                        {item.hidden ? "Unhide" : "Hide item"}
+                      </button>
+                    </form>
+                  </div>
+                  <div className="panel__body">
+                    <ItemForm
+                      mode="edit"
+                      item={item}
+                      locations={locations}
+                      canManageLocations
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
       </div>
     </main>
   );
+}
+
+function isStudentLike(user: { role: string } | null) {
+  return user?.role === "STUDENT";
 }

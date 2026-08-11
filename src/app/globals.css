@@ -816,6 +816,30 @@ table.data-table {
   gap: 1rem;
 }
 
+.item-detail__activity {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+.item-manage {
+  margin-top: 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.item-manage__intro {
+  margin-bottom: 0.85rem;
+}
+
+.item-manage__intro h2 {
+  margin: 0.2rem 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  letter-spacing: -0.03em;
+}
+
+
 @media (min-width: 720px) {
   .page-shell {
     width: min(1120px, calc(100% - 2rem));
@@ -881,6 +905,17 @@ table.data-table {
   .detail-grid {
     grid-template-columns: 1.4fr 1fr;
   }
+
+  .item-detail__activity {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .item-manage {
+    margin-top: 0.75rem;
+    padding-top: 1.75rem;
+  }
+
 
   .btn {
     padding: 0.55rem 0.95rem;
