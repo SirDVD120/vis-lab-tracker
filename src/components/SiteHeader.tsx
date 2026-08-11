@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
@@ -34,8 +35,16 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
     <>
       <header className="site-header">
         <div className="site-header__brand">
-          <Link href={user ? "/" : "/login"} className="brand-mark">
-            VIS Lab Tracker
+          <Link href={user ? "/" : "/login"} className="brand-lockup">
+            <Image
+              src="/brand/vis-logo.png"
+              alt="VIS@betterworld lab"
+              width={220}
+              height={156}
+              className="brand-lockup__logo"
+              priority
+            />
+            <span className="sr-only">VIS Lab Tracker</span>
           </Link>
           <p className="site-header__meta">Science department inventory</p>
         </div>
