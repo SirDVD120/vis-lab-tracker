@@ -87,13 +87,11 @@ export async function createItemAction(formData: FormData) {
     throw new Error(`SKU ${sku} is already in use`);
   }
 
-  const barcode = parsed.barcode?.trim() || sku;
-
   const item = await prisma.item.create({
     data: {
       kind: parsed.kind,
       sku,
-      barcode,
+      barcode: sku,
       name: parsed.name,
       unit: parsed.unit,
       quantity: parsed.quantity,

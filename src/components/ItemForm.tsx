@@ -53,7 +53,7 @@ export function ItemForm({
       <div className="field-row">
         <div className="field">
           <label htmlFor="sku">
-            SKU{" "}
+            SKU / barcode{" "}
             {mode === "create" ? (
               <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
                 (optional)
@@ -70,28 +70,21 @@ export function ItemForm({
             placeholder={
               mode === "create"
                 ? kind === "CONSUMABLE"
-                  ? "Leave blank for next 2xxxx, or paste barcode"
-                  : "Leave blank for next 1xxxx, or paste barcode"
+                  ? "Leave blank for next 2xxxx, or paste package barcode"
+                  : "Leave blank for next 1xxxx, or paste package barcode"
                 : undefined
             }
           />
           {mode === "create" ? (
             <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
-              Blank SKUs are auto-assigned ({kind === "CONSUMABLE" ? "2…" : "1…"}).
-              Enter a package barcode here if you want to use that as the SKU.
+              Blank values are auto-assigned ({kind === "CONSUMABLE" ? "2…" : "1…"}).
+              The barcode is always set to the same value as the SKU.
             </p>
-          ) : null}
-        </div>
-        <div className="field">
-          <label htmlFor="barcode">Barcode</label>
-          <input
-            id="barcode"
-            name={lockedIds ? undefined : "barcode"}
-            defaultValue={item?.barcode ?? ""}
-            readOnly={lockedIds}
-            className={lockedIds ? "is-locked" : undefined}
-            placeholder={mode === "create" ? "Optional — defaults to SKU" : undefined}
-          />
+          ) : (
+            <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+              Barcode matches SKU{item?.barcode && item.barcode !== item.sku ? ` (stored: ${item.barcode})` : ""}.
+            </p>
+          )}
         </div>
       </div>
 
