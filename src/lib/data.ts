@@ -6,6 +6,7 @@ export async function searchItems(options: {
   query?: string;
   includeHidden?: boolean;
   restockOnly?: boolean;
+  take?: number;
 }) {
   const q = options.query?.trim();
 
@@ -31,11 +32,65 @@ export async function searchItems(options: {
     where,
     include: { location: true },
     orderBy: [{ name: "asc" }],
+    ...(options.take ? { take: options.take } : {}),
   });
 
   if (!options.restockOnly) return items;
 
   return items.filter((item) => item.quantity < item.restockThreshold);
+}
+
+export type SuggestItem = {
+  id: string;
+  name: string;
+  sku: string;
+  kind: ItemKind;
+  locationName: string | null;
+};
+
+/** Compact matches for typeahead (both catalogs). */
+export async function suggestItems(query: string, options?: {
+  preferKind?: ItemKind;
+  limit?: number;
+}): Promise<SuggestItem[]> {
+  const q = query.trim();
+  if (q.length < 1) return [];
+
+  const limit = options?.limit ?? 10;
+  const items = await prisma.item.findMany({
+    where: {
+      hidden: false,
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { sku: { contains: q, mode: "insensitive" } },
+        { barcode: { contains: q, mode: "insensitive" } },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      sku: true,
+      kind: true,
+      location: { select: { name: true } },
+    },
+    orderBy: [{ name: "asc" }],
+    take: limit * 2,
+  });
+
+  const mapped = items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    sku: item.sku,
+    kind: item.kind,
+    locationName: item.location?.name ?? null,
+  }));
+
+  if (!options?.preferKind) return mapped.slice(0, limit);
+
+  return [
+    ...mapped.filter((i) => i.kind === options.preferKind),
+    ...mapped.filter((i) => i.kind !== options.preferKind),
+  ].slice(0, limit);
 }
 
 export async function inventoryCounts() {

@@ -1,5 +1,6 @@
 import { ItemTable } from "@/components/ItemTable";
 import { InventorySearch } from "@/components/InventorySearch";
+import { CrossCatalogResults } from "@/components/CrossCatalogResults";
 import { searchItems } from "@/lib/data";
 import { requireApprovedPage, isAdmin } from "@/lib/auth";
 
@@ -10,13 +11,23 @@ export default async function ConsumablesPage({
 }) {
   const params = await searchParams;
   const includeHidden = params.hidden === "1";
-  const [user, items] = await Promise.all([
+  const query = params.q?.trim() ?? "";
+
+  const [user, items, otherItems] = await Promise.all([
     requireApprovedPage(),
     searchItems({
       kind: "CONSUMABLE",
       query: params.q,
       includeHidden,
     }),
+    query
+      ? searchItems({
+          kind: "EQUIPMENT",
+          query,
+          includeHidden: false,
+          take: 8,
+        })
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -32,19 +43,31 @@ export default async function ConsumablesPage({
 
       <InventorySearch
         actionHref="/consumables"
+        preferKind="CONSUMABLE"
         defaultQuery={params.q ?? ""}
         showHidden={includeHidden}
         newHref={isAdmin(user) ? "/items/new?kind=CONSUMABLE" : undefined}
         newLabel="Add consumable"
       />
 
-      <div className="panel">
-        <div className="panel__header">
-          <h2>
-            {items.length} item{items.length === 1 ? "" : "s"}
-          </h2>
+      <div className="stack-sm">
+        <div className="panel">
+          <div className="panel__header">
+            <h2>
+              {items.length} item{items.length === 1 ? "" : "s"}
+            </h2>
+          </div>
+          <ItemTable items={items} emptyLabel="No consumables match that search." />
         </div>
-        <ItemTable items={items} emptyLabel="No consumables match that search." />
+
+        {query ? (
+          <CrossCatalogResults
+            items={otherItems}
+            otherHref="/equipment"
+            otherLabel="Equipment"
+            query={query}
+          />
+        ) : null}
       </div>
     </main>
   );
