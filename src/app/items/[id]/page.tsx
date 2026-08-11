@@ -8,14 +8,6 @@ import { ItemForm } from "@/components/ItemForm";
 import { StockControls } from "@/components/StockControls";
 import { hideItemAction } from "@/actions/items";
 
-function ExternalLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer">
-      {children}
-    </a>
-  );
-}
-
 export default async function ItemDetailPage({
   params,
 }: {
@@ -119,12 +111,22 @@ export default async function ItemDetailPage({
               )}
 
               {item.sdsFilename ? (
-                <p style={{ margin: 0 }}>
+                <p className="meta-line" style={{ margin: 0 }}>
                   <strong>SDS:</strong>{" "}
                   {item.sdsFilename.startsWith("http") ? (
-                    <ExternalLink href={item.sdsFilename}>{item.sdsFilename}</ExternalLink>
+                    <a
+                      href={item.sdsFilename}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="external-link"
+                      title={item.sdsFilename}
+                    >
+                      Open SDS
+                    </a>
                   ) : (
-                    item.sdsFilename
+                    <span className="truncate-text" title={item.sdsFilename}>
+                      {item.sdsFilename}
+                    </span>
                   )}
                 </p>
               ) : (
@@ -134,9 +136,17 @@ export default async function ItemDetailPage({
               )}
 
               {item.purchaseLink ? (
-                <p style={{ margin: 0 }}>
+                <p className="meta-line" style={{ margin: 0 }}>
                   <strong>Purchase:</strong>{" "}
-                  <ExternalLink href={item.purchaseLink}>{item.purchaseLink}</ExternalLink>
+                  <a
+                    href={item.purchaseLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="external-link"
+                    title={item.purchaseLink}
+                  >
+                    Open purchase page
+                  </a>
                 </p>
               ) : (
                 <p className="muted" style={{ margin: 0 }}>

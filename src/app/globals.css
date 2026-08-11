@@ -959,6 +959,44 @@ table.data-table {
   color: var(--ink-soft);
 }
 
+.meta-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.meta-line strong {
+  flex-shrink: 0;
+}
+
+.external-link {
+  display: inline-block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.external-link:hover {
+  color: var(--brand-deep);
+}
+
+.truncate-text {
+  display: inline-block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
 .form-feedback {
   font-size: 0.95rem;
   line-height: 1.4;
