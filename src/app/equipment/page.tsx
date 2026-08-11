@@ -1,7 +1,7 @@
 import { ItemTable } from "@/components/ItemTable";
 import { InventorySearch } from "@/components/InventorySearch";
 import { searchItems } from "@/lib/data";
-import { requireApprovedPage, getSession, isAdmin } from "@/lib/auth";
+import { requireApprovedPage, isAdmin } from "@/lib/auth";
 
 export default async function EquipmentPage({
   searchParams,
@@ -10,14 +10,13 @@ export default async function EquipmentPage({
 }) {
   const params = await searchParams;
   const includeHidden = params.hidden === "1";
-  await requireApprovedPage();
-  const [items, user] = await Promise.all([
+  const [user, items] = await Promise.all([
+    requireApprovedPage(),
     searchItems({
       kind: "EQUIPMENT",
       query: params.q,
       includeHidden,
     }),
-    getSession(),
   ]);
 
   return (

@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { unstable_cache, updateTag } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { User } from "@/generated/prisma/client";
@@ -48,7 +50,42 @@ export function isBootstrapHodEmail(email: string) {
   return bootstrapEmails().includes(email.trim().toLowerCase());
 }
 
-export async function getAuthState(): Promise<AuthState> {
+export function googleAccountTag(googleSub: string) {
+  return `google-account-${googleSub}`;
+}
+
+export function revalidateGoogleAccount(googleSub: string) {
+  updateTag(googleAccountTag(googleSub));
+}
+
+export function revalidateAllGoogleAccounts() {
+  updateTag("google-accounts");
+}
+
+type AccountWithUser = NonNullable<
+  Awaited<ReturnType<typeof fetchGoogleAccountUncached>>
+>;
+
+async function fetchGoogleAccountUncached(googleSub: string) {
+  return prisma.googleAccount.findUnique({
+    where: { googleSub },
+    include: { user: true },
+  });
+}
+
+function getCachedGoogleAccount(googleSub: string) {
+  return unstable_cache(
+    async () => fetchGoogleAccountUncached(googleSub),
+    [googleAccountTag(googleSub)],
+    {
+      revalidate: 15,
+      tags: [googleAccountTag(googleSub), "google-accounts"],
+    },
+  )();
+}
+
+/** One auth resolution per request (layout + page share this). */
+export const getAuthState = cache(async (): Promise<AuthState> => {
   const session = await auth();
   const googleSub = session?.googleSub;
   const email = session?.user?.email;
@@ -63,10 +100,7 @@ export async function getAuthState(): Promise<AuthState> {
     name: session.user?.name,
   };
 
-  const account = await prisma.googleAccount.findUnique({
-    where: { googleSub },
-    include: { user: true },
-  });
+  const account = (await getCachedGoogleAccount(googleSub)) as AccountWithUser | null;
 
   if (!account) {
     return { status: "unclaimed", google };
@@ -77,7 +111,7 @@ export async function getAuthState(): Promise<AuthState> {
     return { status: "approved", user, google };
   }
   return { status: "pending", user, google };
-}
+});
 
 /** Approved app user only — null if anonymous / unclaimed / pending */
 export async function getSession(): Promise<SessionUser | null> {

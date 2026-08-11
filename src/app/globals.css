@@ -959,6 +959,25 @@ table.data-table {
   color: var(--ink-soft);
 }
 
+.form-feedback {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.form-feedback--pending {
+  color: var(--ink-soft);
+}
+
+.form-feedback--ok {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.form-feedback--error {
+  color: var(--brand);
+  font-weight: 600;
+}
+
 .stack-sm {
   display: flex;
   flex-direction: column;

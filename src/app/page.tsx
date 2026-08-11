@@ -7,8 +7,10 @@ import { formatQuantity, kindLabel } from "@/lib/format";
 export default async function HomePage() {
   const user = await requireApprovedPage();
   const student = isStudent(user);
-  const counts = await inventoryCounts();
-  const attention = student ? null : await homeAttention();
+  const [counts, attention] = await Promise.all([
+    inventoryCounts(),
+    student ? Promise.resolve(null) : homeAttention(),
+  ]);
 
   const destinations = [
     {

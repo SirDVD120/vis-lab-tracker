@@ -1,13 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { signIn, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@/generated/prisma/client";
 import {
   getAuthState,
+  googleAccountTag,
   isBootstrapHodEmail,
+  revalidateAllGoogleAccounts,
   requireHod,
 } from "@/lib/auth";
 
@@ -107,6 +109,8 @@ export async function claimNameAction(formData: FormData) {
   });
 
   revalidatePath("/", "layout");
+  updateTag(googleAccountTag(state.google.sub));
+  revalidateAllGoogleAccounts();
   if (result.user.status === "APPROVED" && result.accountApproved) {
     redirect("/");
   }
@@ -135,6 +139,7 @@ export async function approveUserAction(formData: FormData) {
     }),
   ]);
 
+  revalidateAllGoogleAccounts();
   revalidatePath("/users");
 }
 
@@ -161,6 +166,7 @@ export async function approveGoogleAccountAction(formData: FormData) {
     }
   });
 
+  updateTag(googleAccountTag(account.googleSub));
   revalidatePath("/users");
 }
 
@@ -189,6 +195,7 @@ export async function updateUserPermissionsAction(formData: FormData) {
     data: permissionsForRole(role, canSignOut, canManageUsers),
   });
 
+  revalidateAllGoogleAccounts();
   revalidatePath("/users");
 }
 
@@ -221,12 +228,15 @@ export async function deleteUserAction(formData: FormData) {
     await prisma.user.delete({ where: { id } });
   }
 
+  revalidateAllGoogleAccounts();
   revalidatePath("/users");
 }
 
 export async function removeGoogleAccountAction(formData: FormData) {
   await requireHod();
   const id = String(formData.get("id") ?? "");
+  const account = await prisma.googleAccount.findUnique({ where: { id } });
   await prisma.googleAccount.delete({ where: { id } });
+  if (account) updateTag(googleAccountTag(account.googleSub));
   revalidatePath("/users");
 }

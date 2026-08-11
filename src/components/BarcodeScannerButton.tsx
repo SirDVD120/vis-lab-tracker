@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Html5Qrcode } from "html5-qrcode";
+import type { Html5Qrcode } from "html5-qrcode";
 
 type Props = {
   /** Path to navigate to with ?q=code, default /sign-out */
@@ -32,6 +32,7 @@ export function BarcodeScannerButton({
 
     async function start() {
       try {
+        const { Html5Qrcode } = await import("html5-qrcode");
         const scanner = new Html5Qrcode(scannerRegionId);
         scannerRef.current = scanner;
 

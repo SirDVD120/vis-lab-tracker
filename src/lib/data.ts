@@ -14,6 +14,10 @@ export async function searchItems(options: {
     ...(options.includeHidden ? {} : { hidden: false }),
   };
 
+  if (options.restockOnly) {
+    where.excludeFromRestock = false;
+  }
+
   if (q) {
     where.OR = [
       { name: { contains: q, mode: "insensitive" } },
@@ -31,64 +35,60 @@ export async function searchItems(options: {
 
   if (!options.restockOnly) return items;
 
-  return items.filter(
-    (item) =>
-      !item.excludeFromRestock &&
-      !item.hidden &&
-      item.quantity < item.restockThreshold,
-  );
+  return items.filter((item) => item.quantity < item.restockThreshold);
 }
 
 export async function inventoryCounts() {
-  const [equipment, consumables, restockEquipment, restockConsumables, openSignOuts] =
-    await Promise.all([
-      prisma.item.count({ where: { kind: "EQUIPMENT", hidden: false } }),
-      prisma.item.count({ where: { kind: "CONSUMABLE", hidden: false } }),
-      prisma.item.findMany({
-        where: {
-          kind: "EQUIPMENT",
-          hidden: false,
-          excludeFromRestock: false,
-        },
-        select: { quantity: true, restockThreshold: true },
-      }),
-      prisma.item.findMany({
-        where: {
-          kind: "CONSUMABLE",
-          hidden: false,
-          excludeFromRestock: false,
-        },
-        select: { quantity: true, restockThreshold: true },
-      }),
-      prisma.signOut.count({ where: { status: { in: ["OPEN", "PARTIAL"] } } }),
-    ]);
+  const [equipment, consumables, restockRow, openSignOuts] = await Promise.all([
+    prisma.item.count({ where: { kind: "EQUIPMENT", hidden: false } }),
+    prisma.item.count({ where: { kind: "CONSUMABLE", hidden: false } }),
+    prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*)::bigint AS count
+      FROM "Item"
+      WHERE hidden = false
+        AND "excludeFromRestock" = false
+        AND quantity < "restockThreshold"
+    `,
+    prisma.signOut.count({ where: { status: { in: ["OPEN", "PARTIAL"] } } }),
+  ]);
 
   return {
     equipment,
     consumables,
-    restock:
-      restockEquipment.filter((i) => i.quantity < i.restockThreshold).length +
-      restockConsumables.filter((i) => i.quantity < i.restockThreshold).length,
+    restock: Number(restockRow[0]?.count ?? 0),
     openSignOuts,
   };
 }
 
 /** Compact lists for the home “needs attention” section */
 export async function homeAttention() {
-  const [restockCandidates, openSignOuts] = await Promise.all([
-    prisma.item.findMany({
-      where: {
-        hidden: false,
-        excludeFromRestock: false,
-      },
-      include: { location: true },
-      orderBy: [{ kind: "asc" }, { name: "asc" }],
-      take: 80,
-    }),
+  const [lowStock, openSignOuts] = await Promise.all([
+    prisma.$queryRaw<
+      Array<{
+        id: string;
+        kind: ItemKind;
+        name: string;
+        unit: string;
+        quantity: number;
+        restockThreshold: number;
+        locationId: string | null;
+        locationName: string | null;
+      }>
+    >`
+      SELECT i.id, i.kind, i.name, i.unit, i.quantity, i."restockThreshold",
+             i."locationId", l.name AS "locationName"
+      FROM "Item" i
+      LEFT JOIN "Location" l ON l.id = i."locationId"
+      WHERE i.hidden = false
+        AND i."excludeFromRestock" = false
+        AND i.quantity < i."restockThreshold"
+      ORDER BY i.kind ASC, i.name ASC
+      LIMIT 6
+    `,
     prisma.signOut.findMany({
       where: { status: { in: ["OPEN", "PARTIAL"] } },
       include: {
-        item: true,
+        item: { select: { id: true, name: true, unit: true } },
         user: { select: { name: true } },
       },
       orderBy: { signedOutAt: "desc" },
@@ -96,9 +96,18 @@ export async function homeAttention() {
     }),
   ]);
 
-  const lowStock = restockCandidates
-    .filter((item) => item.quantity < item.restockThreshold)
-    .slice(0, 6);
-
-  return { lowStock, openSignOuts };
+  return {
+    lowStock: lowStock.map((item) => ({
+      id: item.id,
+      kind: item.kind,
+      name: item.name,
+      unit: item.unit,
+      quantity: Number(item.quantity),
+      restockThreshold: Number(item.restockThreshold),
+      location: item.locationId
+        ? { id: item.locationId, name: item.locationName ?? "" }
+        : null,
+    })),
+    openSignOuts,
+  };
 }
