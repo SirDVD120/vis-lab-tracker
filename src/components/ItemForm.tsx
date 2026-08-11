@@ -190,6 +190,16 @@ export function ItemForm({
       </div>
 
       <div className="field-row">
+        {kind === "EQUIPMENT" ? (
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              name="pblBudget"
+              defaultChecked={item?.pblBudget ?? false}
+            />
+            PBL budget
+          </label>
+        ) : null}
         <label className="checkbox-row">
           <input
             type="checkbox"

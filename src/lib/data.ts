@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import type { ItemKind, Prisma } from "@/generated/prisma/client";
 
+function isPblQuery(query: string) {
+  const q = query.trim().toLowerCase();
+  return q === "pbl" || q === "pbl budget" || q === "pblbudget";
+}
+
 export async function searchItems(options: {
   kind: ItemKind;
   query?: string;
@@ -20,12 +25,16 @@ export async function searchItems(options: {
   }
 
   if (q) {
-    where.OR = [
-      { name: { contains: q, mode: "insensitive" } },
-      { sku: { contains: q, mode: "insensitive" } },
-      { barcode: { contains: q, mode: "insensitive" } },
-      { notes: { contains: q, mode: "insensitive" } },
-    ];
+    if (isPblQuery(q)) {
+      where.pblBudget = true;
+    } else {
+      where.OR = [
+        { name: { contains: q, mode: "insensitive" } },
+        { sku: { contains: q, mode: "insensitive" } },
+        { barcode: { contains: q, mode: "insensitive" } },
+        { notes: { contains: q, mode: "insensitive" } },
+      ];
+    }
   }
 
   const items = await prisma.item.findMany({
@@ -46,6 +55,7 @@ export type SuggestItem = {
   sku: string;
   kind: ItemKind;
   locationName: string | null;
+  pblBudget: boolean;
 };
 
 /** Compact matches for typeahead (both catalogs). */
@@ -57,20 +67,28 @@ export async function suggestItems(query: string, options?: {
   if (q.length < 1) return [];
 
   const limit = options?.limit ?? 10;
+  const where: Prisma.ItemWhereInput = {
+    hidden: false,
+  };
+
+  if (isPblQuery(q)) {
+    where.pblBudget = true;
+  } else {
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { sku: { contains: q, mode: "insensitive" } },
+      { barcode: { contains: q, mode: "insensitive" } },
+    ];
+  }
+
   const items = await prisma.item.findMany({
-    where: {
-      hidden: false,
-      OR: [
-        { name: { contains: q, mode: "insensitive" } },
-        { sku: { contains: q, mode: "insensitive" } },
-        { barcode: { contains: q, mode: "insensitive" } },
-      ],
-    },
+    where,
     select: {
       id: true,
       name: true,
       sku: true,
       kind: true,
+      pblBudget: true,
       location: { select: { name: true } },
     },
     orderBy: [{ name: "asc" }],
@@ -82,6 +100,7 @@ export async function suggestItems(query: string, options?: {
     name: item.name,
     sku: item.sku,
     kind: item.kind,
+    pblBudget: item.pblBudget,
     locationName: item.location?.name ?? null,
   }));
 

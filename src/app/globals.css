@@ -501,6 +501,14 @@ table.data-table {
   background: rgba(196, 150, 30, 0.16);
 }
 
+.badge--pbl {
+  color: #3d5a80;
+  background: rgba(61, 90, 128, 0.12);
+  border: 1px solid rgba(61, 90, 128, 0.18);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+}
+
 .badge--open {
   color: #8a5a00;
   background: rgba(196, 140, 30, 0.14);

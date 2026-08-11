@@ -69,6 +69,7 @@ export default async function ItemDetailPage({
           {item.excludeFromRestock ? (
             <span className="badge badge--muted">No reorder</span>
           ) : null}
+          {item.pblBudget ? <span className="badge badge--pbl">PBL</span> : null}
           <span className="badge badge--muted">
             In stock: {formatQuantity(item.quantity, item.unit)}
           </span>
