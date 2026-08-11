@@ -36,9 +36,24 @@ export function PageSkeleton({
       ) : null}
 
       {variant === "detail" ? (
-        <div className="detail-grid">
-          <div className="skeleton skeleton--panel skeleton--panel-tall" />
-          <div className="skeleton skeleton--panel" />
+        <div className="stack-sm item-detail">
+          <div className="skeleton skeleton--badges" />
+          <div className="skeleton skeleton--panel skeleton--panel-info" />
+          <div className="item-detail__activity">
+            <div className="skeleton skeleton--panel" />
+            <div className="skeleton skeleton--panel" />
+          </div>
+          <section className="item-manage">
+            <div className="item-manage__intro">
+              <div className="skeleton skeleton--eyebrow" />
+              <div className="skeleton skeleton--manage-title" />
+              <div className="skeleton skeleton--lede" />
+            </div>
+            <div className="stack-sm">
+              <div className="skeleton skeleton--panel" />
+              <div className="skeleton skeleton--panel skeleton--panel-tall" />
+            </div>
+          </section>
         </div>
       ) : null}
 
