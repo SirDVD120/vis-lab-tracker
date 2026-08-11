@@ -85,8 +85,6 @@ model Item {
   restockThreshold   Float    @default(0)
   excludeFromRestock Boolean  @default(false)
   hidden             Boolean  @default(false)
-  /// Bought on the PBL budget (equipment)
-  pblBudget          Boolean  @default(false)
   notes              String   @default("")
   sdsFilename        String?
   imageUrl           String?
@@ -102,7 +100,6 @@ model Item {
 
   @@index([kind, hidden])
   @@index([name])
-  @@index([pblBudget])
 }
 
 model SignOut {

@@ -181,7 +181,6 @@ export function InventorySearch({
                     <span className={`badge ${other ? "badge--other" : "badge--muted"}`}>
                       {kindLabel(item.kind)}
                     </span>
-                    {item.pblBudget ? <span className="badge badge--pbl">PBL</span> : null}
                     {item.locationName ? (
                       <span className="muted">{item.locationName}</span>
                     ) : null}

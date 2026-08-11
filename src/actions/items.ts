@@ -25,7 +25,6 @@ const itemSchema = z.object({
   locationId: z.string().optional().nullable(),
   excludeFromRestock: z.coerce.boolean().optional(),
   hidden: z.coerce.boolean().optional(),
-  pblBudget: z.coerce.boolean().optional(),
 });
 
 /** Next internal SKU: equipment 1xxxx, consumables 2xxxx */
@@ -71,7 +70,6 @@ function parseItemForm(formData: FormData, existingSku?: string, existingBarcode
     locationId: formData.get("locationId") || null,
     excludeFromRestock: formData.get("excludeFromRestock") === "on",
     hidden: formData.get("hidden") === "on",
-    pblBudget: formData.get("pblBudget") === "on",
   });
 }
 
@@ -105,7 +103,6 @@ export async function createItemAction(formData: FormData) {
       locationId: parsed.locationId || null,
       excludeFromRestock: parsed.excludeFromRestock ?? false,
       hidden: parsed.hidden ?? false,
-      pblBudget: parsed.kind === "EQUIPMENT" ? Boolean(parsed.pblBudget) : false,
     },
   });
 
@@ -146,7 +143,6 @@ export async function updateItemAction(formData: FormData) {
       locationId: parsed.locationId || null,
       excludeFromRestock: parsed.excludeFromRestock ?? false,
       hidden: parsed.hidden ?? false,
-      pblBudget: existing.kind === "EQUIPMENT" ? Boolean(parsed.pblBudget) : false,
     },
   });
 

@@ -54,7 +54,6 @@ export function ItemTable({
 function ItemBadges({ item, low }: { item: ItemRow; low: boolean }) {
   return (
     <>
-      {item.pblBudget ? <span className="badge badge--pbl">PBL</span> : null}
       {item.hidden ? <span className="badge badge--muted">Hidden</span> : null}
       {item.excludeFromRestock ? <span className="badge badge--muted">No reorder</span> : null}
       {low ? (

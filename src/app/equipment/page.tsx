@@ -36,8 +36,8 @@ export default async function EquipmentPage({
         <p className="eyebrow">Catalog</p>
         <h1>Equipment</h1>
         <p className="lede">
-          Reusable lab equipment. Low stock is highlighted in red. Search{" "}
-          <strong>PBL</strong> to find items bought on the PBL budget.
+          Reusable lab equipment. Low stock is highlighted in red. Hide items you
+          no longer want to order without deleting their history.
         </p>
       </section>
 
