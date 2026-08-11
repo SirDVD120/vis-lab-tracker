@@ -12,7 +12,7 @@ import type { ItemKind } from "@/generated/prisma/client";
 
 const itemSchema = z.object({
   kind: z.enum(["EQUIPMENT", "CONSUMABLE"]),
-  sku: z.string().trim().min(1),
+  sku: z.string().trim().optional(),
   barcode: z.string().trim().optional(),
   name: z.string().trim().min(1),
   unit: z.string().trim().min(1),
@@ -27,6 +27,25 @@ const itemSchema = z.object({
   hidden: z.coerce.boolean().optional(),
 });
 
+/** Next internal SKU: equipment 1xxxx, consumables 2xxxx */
+export async function nextSkuForKind(kind: ItemKind): Promise<string> {
+  const prefix = kind === "EQUIPMENT" ? "1" : "2";
+  const floor = kind === "EQUIPMENT" ? 10000 : 20000;
+  const rows = await prisma.item.findMany({
+    where: { sku: { startsWith: prefix } },
+    select: { sku: true },
+  });
+
+  let max = floor;
+  for (const { sku } of rows) {
+    if (!/^\d+$/.test(sku) || !sku.startsWith(prefix)) continue;
+    const n = Number(sku);
+    if (Number.isSafeInteger(n) && n > max) max = n;
+  }
+
+  return String(max + 1);
+}
+
 function revalidateInventory(kind?: ItemKind) {
   revalidatePath("/");
   revalidatePath("/restock");
@@ -38,7 +57,7 @@ function revalidateInventory(kind?: ItemKind) {
 function parseItemForm(formData: FormData, existingSku?: string, existingBarcode?: string | null) {
   return itemSchema.parse({
     kind: formData.get("kind"),
-    sku: existingSku ?? formData.get("sku"),
+    sku: existingSku ?? (formData.get("sku") || undefined),
     barcode: existingBarcode ?? (formData.get("barcode") || undefined),
     name: formData.get("name"),
     unit: formData.get("unit"),
@@ -58,12 +77,23 @@ export async function createItemAction(formData: FormData) {
   await requireAdmin();
 
   const parsed = parseItemForm(formData);
+  let sku = parsed.sku?.trim() || "";
+  if (!sku) {
+    sku = await nextSkuForKind(parsed.kind);
+  }
+
+  const existing = await prisma.item.findUnique({ where: { sku } });
+  if (existing) {
+    throw new Error(`SKU ${sku} is already in use`);
+  }
+
+  const barcode = parsed.barcode?.trim() || sku;
 
   const item = await prisma.item.create({
     data: {
       kind: parsed.kind,
-      sku: parsed.sku,
-      barcode: parsed.barcode || parsed.sku,
+      sku,
+      barcode,
       name: parsed.name,
       unit: parsed.unit,
       quantity: parsed.quantity,

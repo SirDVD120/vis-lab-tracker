@@ -52,15 +52,35 @@ export function ItemForm({
 
       <div className="field-row">
         <div className="field">
-          <label htmlFor="sku">SKU</label>
+          <label htmlFor="sku">
+            SKU{" "}
+            {mode === "create" ? (
+              <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
+                (optional)
+              </span>
+            ) : null}
+          </label>
           <input
             id="sku"
             name={lockedIds ? undefined : "sku"}
-            required={!lockedIds}
+            required={false}
             defaultValue={item?.sku ?? ""}
             readOnly={lockedIds}
             className={lockedIds ? "is-locked" : undefined}
+            placeholder={
+              mode === "create"
+                ? kind === "CONSUMABLE"
+                  ? "Leave blank for next 2xxxx, or paste barcode"
+                  : "Leave blank for next 1xxxx, or paste barcode"
+                : undefined
+            }
           />
+          {mode === "create" ? (
+            <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+              Blank SKUs are auto-assigned ({kind === "CONSUMABLE" ? "2…" : "1…"}).
+              Enter a package barcode here if you want to use that as the SKU.
+            </p>
+          ) : null}
         </div>
         <div className="field">
           <label htmlFor="barcode">Barcode</label>
@@ -70,6 +90,7 @@ export function ItemForm({
             defaultValue={item?.barcode ?? ""}
             readOnly={lockedIds}
             className={lockedIds ? "is-locked" : undefined}
+            placeholder={mode === "create" ? "Optional — defaults to SKU" : undefined}
           />
         </div>
       </div>
