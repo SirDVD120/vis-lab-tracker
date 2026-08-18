@@ -54,11 +54,11 @@ function revalidateInventory(kind?: ItemKind) {
   if (!kind || kind === "CONSUMABLE") revalidatePath("/consumables");
 }
 
-function parseItemForm(formData: FormData, existingSku?: string, existingBarcode?: string | null) {
+function parseItemForm(formData: FormData, existingSku?: string) {
   return itemSchema.parse({
     kind: formData.get("kind"),
     sku: existingSku ?? (formData.get("sku") || undefined),
-    barcode: existingBarcode ?? (formData.get("barcode") || undefined),
+    barcode: formData.get("barcode") || undefined,
     name: formData.get("name"),
     unit: formData.get("unit"),
     quantity: formData.get("quantity"),
@@ -87,11 +87,14 @@ export async function createItemAction(formData: FormData) {
     throw new Error(`SKU ${sku} is already in use`);
   }
 
+  // Product barcode (EAN etc.) if provided; otherwise match the lab SKU
+  const barcode = parsed.barcode?.trim() || sku;
+
   const item = await prisma.item.create({
     data: {
       kind: parsed.kind,
       sku,
-      barcode: sku,
+      barcode,
       name: parsed.name,
       unit: parsed.unit,
       quantity: parsed.quantity,
@@ -128,7 +131,7 @@ export async function updateItemAction(formData: FormData) {
   const existing = await prisma.item.findUnique({ where: { id } });
   if (!existing) throw new Error("Item not found");
 
-  const parsed = parseItemForm(formData, existing.sku, existing.barcode);
+  const parsed = parseItemForm(formData, existing.sku);
 
   await prisma.item.update({
     where: { id },
@@ -143,6 +146,7 @@ export async function updateItemAction(formData: FormData) {
       locationId: parsed.locationId || null,
       excludeFromRestock: parsed.excludeFromRestock ?? false,
       hidden: parsed.hidden ?? false,
+      barcode: parsed.barcode?.trim() || existing.sku,
     },
   });
 

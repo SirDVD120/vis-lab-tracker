@@ -26,6 +26,7 @@ export function ItemForm({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [sku, setSku] = useState(item?.sku ?? "");
+  const [barcode, setBarcode] = useState(item?.barcode ?? item?.sku ?? "");
   const kind = item?.kind ?? defaultKind;
   const lockedIds = mode === "edit";
 
@@ -52,16 +53,16 @@ export function ItemForm({
       {mode === "edit" && item ? <input type="hidden" name="id" value={item.id} /> : null}
       <input type="hidden" name="kind" value={kind} />
 
-      <div className="field">
-        <label htmlFor="sku">
-          SKU / barcode{" "}
-          {mode === "create" ? (
-            <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
-              (optional)
-            </span>
-          ) : null}
-        </label>
-        <div className="sku-scan-row">
+      <div className="field-row">
+        <div className="field">
+          <label htmlFor="sku">
+            Lab SKU{" "}
+            {mode === "create" ? (
+              <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
+                (optional)
+              </span>
+            ) : null}
+          </label>
           <input
             id="sku"
             name={lockedIds ? undefined : "sku"}
@@ -73,29 +74,44 @@ export function ItemForm({
             placeholder={
               mode === "create"
                 ? kind === "CONSUMABLE"
-                  ? "Leave blank for next 2xxxx, or scan / paste barcode"
-                  : "Leave blank for next 1xxxx, or scan / paste barcode"
+                  ? "Blank → next 2xxxx"
+                  : "Blank → next 1xxxx"
                 : undefined
             }
           />
           {mode === "create" ? (
+            <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+              Internal stockroom code. Leave blank to auto-assign.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="field">
+          <label htmlFor="barcode">
+            Product barcode{" "}
+            <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
+              (optional)
+            </span>
+          </label>
+          <div className="sku-scan-row">
+            <input
+              id="barcode"
+              name="barcode"
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              placeholder="Scan or paste EAN / UPC from the package"
+            />
             <BarcodeScannerButton
               label="Scan"
               className="btn btn-ghost"
-              onScan={(code) => setSku(code)}
+              onScan={(code) => setBarcode(code)}
             />
-          ) : null}
+          </div>
+          <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+            Package barcode (e.g. 4710095000521). Used for scanning when signing out.
+            If blank, it defaults to the lab SKU.
+          </p>
         </div>
-        {mode === "create" ? (
-          <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
-            Blank values are auto-assigned ({kind === "CONSUMABLE" ? "2…" : "1…"}).
-            Scan a package barcode to use that as the SKU (barcode matches SKU).
-          </p>
-        ) : (
-          <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
-            Barcode matches SKU{item?.barcode && item.barcode !== item.sku ? ` (stored: ${item.barcode})` : ""}.
-          </p>
-        )}
       </div>
 
       <div className="field">
