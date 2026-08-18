@@ -69,8 +69,8 @@ export function ItemForm({
     startTransition(async () => {
       try {
         if (mode === "create") {
-          const id = await createItemAction(formData);
-          router.push(`/items/${id}`);
+          await createItemAction(formData);
+          router.push(kind === "CONSUMABLE" ? "/consumables" : "/equipment");
           router.refresh();
         } else {
           await updateItemAction(formData);

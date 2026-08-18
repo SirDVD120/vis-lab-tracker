@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Figtree, Fraunces } from "next/font/google";
 import { SiteHeader } from "@/components/SiteHeader";
 import { NavigationProgressHost } from "@/components/NavigationProgressHost";
+import { DisableNumberInputWheel } from "@/components/DisableNumberInputWheel";
 import { getSession } from "@/lib/auth";
 import "./globals.css";
 
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <NavigationProgressHost />
+        <DisableNumberInputWheel />
         <div className="page-shell page-shell--wide">
           <SiteHeader user={user} />
           {children}

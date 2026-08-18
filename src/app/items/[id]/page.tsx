@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { getSession, isAdmin, requireApprovedPage } from "@/lib/auth";
-import { formatQuantity, kindLabel, needsRestock } from "@/lib/format";
+import { formatQuantity, kindLabel, needsRestock, sortByNameNatural } from "@/lib/format";
 import { ItemForm } from "@/components/ItemForm";
 import { StockControls } from "@/components/StockControls";
 import { hideItemAction } from "@/actions/items";
@@ -32,7 +32,7 @@ export default async function ItemDetailPage({
   const { id } = await params;
   const { from } = await searchParams;
   await requireApprovedPage();
-  const [item, locations, user] = await Promise.all([
+  const [item, locationsRaw, user] = await Promise.all([
     prisma.item.findUnique({
       where: { id },
       include: {
@@ -52,6 +52,7 @@ export default async function ItemDetailPage({
     prisma.location.findMany({ orderBy: { name: "asc" } }),
     getSession(),
   ]);
+  const locations = sortByNameNatural(locationsRaw);
 
   if (!item) notFound();
 

@@ -24,3 +24,12 @@ export function roleLabel(role: string) {
   if (role === "STUDENT") return "Lab club student";
   return "Staff";
 }
+
+/** Shelf 1, Shelf 2, … Shelf 10 (not Shelf 1, Shelf 10, Shelf 2). */
+export function naturalCompare(a: string, b: string) {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+}
+
+export function sortByNameNatural<T extends { name: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => naturalCompare(a.name, b.name));
+}

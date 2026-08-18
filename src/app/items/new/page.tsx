@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireApprovedPage, isAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ItemForm } from "@/components/ItemForm";
+import { sortByNameNatural } from "@/lib/format";
 import Link from "next/link";
 
 export default async function NewItemPage({
@@ -16,7 +17,9 @@ export default async function NewItemPage({
   }
 
   const kind = params.kind === "CONSUMABLE" ? "CONSUMABLE" : "EQUIPMENT";
-  const locations = await prisma.location.findMany({ orderBy: { name: "asc" } });
+  const locations = sortByNameNatural(
+    await prisma.location.findMany({ orderBy: { name: "asc" } }),
+  );
 
   return (
     <main>
