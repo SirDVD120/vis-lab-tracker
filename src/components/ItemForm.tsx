@@ -5,9 +5,11 @@ import { useState, useTransition } from "react";
 import { createItemAction, updateItemAction } from "@/actions/items";
 import { AddLocationForm } from "@/components/AddLocationForm";
 import { BarcodeScannerButton } from "@/components/BarcodeScannerButton";
-import type { Item, Location } from "@/generated/prisma/client";
+import type { Item, ItemBarcode, Location } from "@/generated/prisma/client";
 
 const UNITS = ["count", "mL", "g", "L", "kg", "bottle", "box", "pack"];
+
+type ItemWithBarcodes = Item & { barcodes?: ItemBarcode[] };
 
 export function ItemForm({
   mode,
@@ -17,7 +19,7 @@ export function ItemForm({
   canManageLocations = false,
 }: {
   mode: "create" | "edit";
-  item?: Item;
+  item?: ItemWithBarcodes;
   locations: Location[];
   defaultKind?: "EQUIPMENT" | "CONSUMABLE";
   canManageLocations?: boolean;
@@ -26,9 +28,41 @@ export function ItemForm({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [sku, setSku] = useState(item?.sku ?? "");
-  const [barcode, setBarcode] = useState(item?.barcode ?? item?.sku ?? "");
+  const [barcodes, setBarcodes] = useState<string[]>(() => {
+    const existing = item?.barcodes?.map((b) => b.code) ?? [];
+    return existing.length > 0 ? existing : [""];
+  });
   const kind = item?.kind ?? defaultKind;
   const lockedIds = mode === "edit";
+
+  function setBarcodeAt(index: number, value: string) {
+    setBarcodes((prev) => prev.map((code, i) => (i === index ? value : code)));
+  }
+
+  function addBarcodeRow(initial = "") {
+    setBarcodes((prev) => [...prev, initial]);
+  }
+
+  function removeBarcodeRow(index: number) {
+    setBarcodes((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [""];
+    });
+  }
+
+  function onScanInto(index: number, code: string) {
+    setBarcodes((prev) => {
+      const next = [...prev];
+      if (!next[index]?.trim()) {
+        next[index] = code;
+        return next;
+      }
+      if (next.some((c) => c.trim().toLowerCase() === code.toLowerCase())) {
+        return next;
+      }
+      return [...next, code];
+    });
+  }
 
   function onSubmit(formData: FormData) {
     setError(null);
@@ -53,65 +87,81 @@ export function ItemForm({
       {mode === "edit" && item ? <input type="hidden" name="id" value={item.id} /> : null}
       <input type="hidden" name="kind" value={kind} />
 
-      <div className="field-row">
-        <div className="field">
-          <label htmlFor="sku">
-            Lab SKU{" "}
-            {mode === "create" ? (
-              <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
-                (optional)
-              </span>
-            ) : null}
-          </label>
-          <input
-            id="sku"
-            name={lockedIds ? undefined : "sku"}
-            required={false}
-            value={lockedIds ? item?.sku ?? "" : sku}
-            onChange={lockedIds ? undefined : (e) => setSku(e.target.value)}
-            readOnly={lockedIds}
-            className={lockedIds ? "is-locked" : undefined}
-            placeholder={
-              mode === "create"
-                ? kind === "CONSUMABLE"
-                  ? "Blank → next 2xxxx"
-                  : "Blank → next 1xxxx"
-                : undefined
-            }
-          />
+      <div className="field">
+        <label htmlFor="sku">
+          Lab SKU{" "}
           {mode === "create" ? (
-            <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
-              Internal stockroom code. Leave blank to auto-assign.
-            </p>
-          ) : null}
-        </div>
-
-        <div className="field">
-          <label htmlFor="barcode">
-            Product barcode{" "}
             <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
               (optional)
             </span>
-          </label>
-          <div className="sku-scan-row">
-            <input
-              id="barcode"
-              name="barcode"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              placeholder="Scan or paste EAN / UPC from the package"
-            />
-            <BarcodeScannerButton
-              label="Scan"
-              className="btn btn-ghost"
-              onScan={(code) => setBarcode(code)}
-            />
-          </div>
+          ) : null}
+        </label>
+        <input
+          id="sku"
+          name={lockedIds ? undefined : "sku"}
+          required={false}
+          value={lockedIds ? item?.sku ?? "" : sku}
+          onChange={lockedIds ? undefined : (e) => setSku(e.target.value)}
+          readOnly={lockedIds}
+          className={lockedIds ? "is-locked" : undefined}
+          placeholder={
+            mode === "create"
+              ? kind === "CONSUMABLE"
+                ? "Blank → next 2xxxx"
+                : "Blank → next 1xxxx"
+              : undefined
+          }
+        />
+        {mode === "create" ? (
           <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
-            Package barcode (e.g. 4710095000521). Used for scanning when signing out.
-            If blank, it defaults to the lab SKU.
+            Internal stockroom code. Leave blank to auto-assign.
           </p>
+        ) : null}
+      </div>
+
+      <div className="field">
+        <label>
+          Product barcodes{" "}
+          <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
+            (optional — one per brand/package)
+          </span>
+        </label>
+        <div className="barcode-list">
+          {barcodes.map((code, index) => (
+            <div key={index} className="sku-scan-row">
+              <input
+                name="barcodes"
+                value={code}
+                onChange={(e) => setBarcodeAt(index, e.target.value)}
+                placeholder="Scan or paste EAN / UPC"
+                aria-label={`Product barcode ${index + 1}`}
+              />
+              <BarcodeScannerButton
+                label="Scan"
+                className="btn btn-ghost"
+                onScan={(scanned) => onScanInto(index, scanned)}
+              />
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => removeBarcodeRow(index)}
+                aria-label={`Remove barcode ${index + 1}`}
+                disabled={barcodes.length === 1 && !code.trim()}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
         </div>
+        <div className="form-actions" style={{ marginTop: "0.5rem" }}>
+          <button type="button" className="btn btn-ghost" onClick={() => addBarcodeRow()}>
+            Add another barcode
+          </button>
+        </div>
+        <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+          Add each package barcode you buy (different brands of the same item). Any of them
+          will find this stock entry when signing out. Lab SKU still works for search too.
+        </p>
       </div>
 
       <div className="field">

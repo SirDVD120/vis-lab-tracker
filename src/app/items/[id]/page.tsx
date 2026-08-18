@@ -37,6 +37,7 @@ export default async function ItemDetailPage({
       where: { id },
       include: {
         location: true,
+        barcodes: { orderBy: { createdAt: "asc" } },
         signOuts: {
           include: { user: true },
           orderBy: { signedOutAt: "desc" },
@@ -68,7 +69,11 @@ export default async function ItemDetailPage({
         <h1>{item.name}</h1>
         <p className="lede">
           SKU {item.sku}
-          {item.barcode && item.barcode !== item.sku ? ` · Barcode ${item.barcode}` : ""}
+          {item.barcodes.length > 0
+            ? ` · Barcode${item.barcodes.length > 1 ? "s" : ""} ${item.barcodes
+                .map((b) => b.code)
+                .join(", ")}`
+            : ""}
           {item.location ? ` · ${item.location.name}` : ""}
         </p>
         <div

@@ -23,7 +23,7 @@ export async function searchItems(options: {
     where.OR = [
       { name: { contains: q, mode: "insensitive" } },
       { sku: { contains: q, mode: "insensitive" } },
-      { barcode: { contains: q, mode: "insensitive" } },
+      { barcodes: { some: { code: { contains: q, mode: "insensitive" } } } },
       { notes: { contains: q, mode: "insensitive" } },
     ];
   }
@@ -63,7 +63,7 @@ export async function suggestItems(query: string, options?: {
       OR: [
         { name: { contains: q, mode: "insensitive" } },
         { sku: { contains: q, mode: "insensitive" } },
-        { barcode: { contains: q, mode: "insensitive" } },
+        { barcodes: { some: { code: { contains: q, mode: "insensitive" } } } },
       ],
     },
     select: {

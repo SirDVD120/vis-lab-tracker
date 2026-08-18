@@ -77,7 +77,6 @@ model Item {
   id                 String   @id @default(cuid())
   kind               ItemKind
   sku                String   @unique
-  barcode            String?
   name               String
   unit               String   @default("count")
   quantity           Float    @default(0)
@@ -95,11 +94,24 @@ model Item {
   locationId String?
   location   Location? @relation(fields: [locationId], references: [id])
 
+  barcodes         ItemBarcode[]
   signOuts         SignOut[]
   stockAdjustments StockAdjustment[]
 
   @@index([kind, hidden])
   @@index([name])
+}
+
+/// Package / brand barcodes (EAN, UPC, etc.) that map to one lab item
+model ItemBarcode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
 }
 
 model SignOut {

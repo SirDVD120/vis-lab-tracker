@@ -13,7 +13,6 @@ import type { ItemKind } from "@/generated/prisma/client";
 const itemSchema = z.object({
   kind: z.enum(["EQUIPMENT", "CONSUMABLE"]),
   sku: z.string().trim().optional(),
-  barcode: z.string().trim().optional(),
   name: z.string().trim().min(1),
   unit: z.string().trim().min(1),
   quantity: z.coerce.number().min(0),
@@ -58,7 +57,6 @@ function parseItemForm(formData: FormData, existingSku?: string) {
   return itemSchema.parse({
     kind: formData.get("kind"),
     sku: existingSku ?? (formData.get("sku") || undefined),
-    barcode: formData.get("barcode") || undefined,
     name: formData.get("name"),
     unit: formData.get("unit"),
     quantity: formData.get("quantity"),
@@ -73,10 +71,47 @@ function parseItemForm(formData: FormData, existingSku?: string) {
   });
 }
 
+/** Unique, non-empty product barcodes from the form (order preserved). */
+function parseBarcodes(formData: FormData): string[] {
+  const seen = new Set<string>();
+  const codes: string[] = [];
+  for (const value of formData.getAll("barcodes")) {
+    const code = String(value).trim();
+    if (!code) continue;
+    const key = code.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    codes.push(code);
+  }
+  return codes;
+}
+
+async function assertBarcodesAvailable(codes: string[], excludeItemId?: string) {
+  if (codes.length === 0) return;
+
+  const conflicts = await prisma.itemBarcode.findMany({
+    where: {
+      OR: codes.map((code) => ({
+        code: { equals: code, mode: "insensitive" as const },
+      })),
+      ...(excludeItemId ? { NOT: { itemId: excludeItemId } } : {}),
+    },
+    select: { code: true, item: { select: { name: true, sku: true } } },
+  });
+
+  if (conflicts.length === 0) return;
+
+  const first = conflicts[0];
+  throw new Error(
+    `Barcode ${first.code} is already used by ${first.item.name} (SKU ${first.item.sku})`,
+  );
+}
+
 export async function createItemAction(formData: FormData) {
   await requireAdmin();
 
   const parsed = parseItemForm(formData);
+  const barcodes = parseBarcodes(formData);
   let sku = parsed.sku?.trim() || "";
   if (!sku) {
     sku = await nextSkuForKind(parsed.kind);
@@ -87,14 +122,12 @@ export async function createItemAction(formData: FormData) {
     throw new Error(`SKU ${sku} is already in use`);
   }
 
-  // Product barcode (EAN etc.) if provided; otherwise match the lab SKU
-  const barcode = parsed.barcode?.trim() || sku;
+  await assertBarcodesAvailable(barcodes);
 
   const item = await prisma.item.create({
     data: {
       kind: parsed.kind,
       sku,
-      barcode,
       name: parsed.name,
       unit: parsed.unit,
       quantity: parsed.quantity,
@@ -106,6 +139,9 @@ export async function createItemAction(formData: FormData) {
       locationId: parsed.locationId || null,
       excludeFromRestock: parsed.excludeFromRestock ?? false,
       hidden: parsed.hidden ?? false,
+      barcodes: {
+        create: barcodes.map((code) => ({ code })),
+      },
     },
   });
 
@@ -132,6 +168,8 @@ export async function updateItemAction(formData: FormData) {
   if (!existing) throw new Error("Item not found");
 
   const parsed = parseItemForm(formData, existing.sku);
+  const barcodes = parseBarcodes(formData);
+  await assertBarcodesAvailable(barcodes, id);
 
   await prisma.item.update({
     where: { id },
@@ -146,7 +184,10 @@ export async function updateItemAction(formData: FormData) {
       locationId: parsed.locationId || null,
       excludeFromRestock: parsed.excludeFromRestock ?? false,
       hidden: parsed.hidden ?? false,
-      barcode: parsed.barcode?.trim() || existing.sku,
+      barcodes: {
+        deleteMany: {},
+        create: barcodes.map((code) => ({ code })),
+      },
     },
   });
 

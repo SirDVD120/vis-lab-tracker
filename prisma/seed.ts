@@ -43,13 +43,13 @@ const prisma = new PrismaClient({
 
 async function upsertItem(kind: ItemKind, item: SeedItem, locationIdByName: Map<string, string>) {
   const locationId = item.location ? locationIdByName.get(item.location) ?? null : null;
+  const barcodeCode = item.barcode?.trim() || null;
 
-  await prisma.item.upsert({
+  const saved = await prisma.item.upsert({
     where: { sku: item.sku },
     create: {
       kind,
       sku: item.sku,
-      barcode: item.barcode,
       name: item.name,
       unit: item.unit,
       quantity: item.quantity,
@@ -59,10 +59,12 @@ async function upsertItem(kind: ItemKind, item: SeedItem, locationIdByName: Map<
       sdsFilename: item.sdsFilename,
       imageUrl: item.imageUrl,
       locationId,
+      ...(barcodeCode
+        ? { barcodes: { create: [{ code: barcodeCode }] } }
+        : {}),
     },
     update: {
       kind,
-      barcode: item.barcode,
       name: item.name,
       unit: item.unit,
       quantity: item.quantity,
@@ -74,6 +76,14 @@ async function upsertItem(kind: ItemKind, item: SeedItem, locationIdByName: Map<
       locationId,
     },
   });
+
+  if (barcodeCode) {
+    await prisma.itemBarcode.upsert({
+      where: { code: barcodeCode },
+      create: { code: barcodeCode, itemId: saved.id },
+      update: { itemId: saved.id },
+    });
+  }
 }
 
 async function main() {

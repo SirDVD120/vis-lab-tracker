@@ -23,9 +23,9 @@ export default async function SignOutPage({
             hidden: false,
             OR: [
               { sku: { equals: q, mode: "insensitive" } },
-              { barcode: { equals: q, mode: "insensitive" } },
               { sku: { contains: q, mode: "insensitive" } },
-              { barcode: { contains: q, mode: "insensitive" } },
+              { barcodes: { some: { code: { equals: q, mode: "insensitive" } } } },
+              { barcodes: { some: { code: { contains: q, mode: "insensitive" } } } },
               { name: { contains: q, mode: "insensitive" } },
             ],
           },
