@@ -1049,9 +1049,20 @@ table.data-table {
   vertical-align: bottom;
 }
 
-.form-feedback {
-  font-size: 0.95rem;
-  line-height: 1.4;
+.sku-scan-row {
+  display: flex;
+  gap: 0.55rem;
+  align-items: stretch;
+}
+
+.sku-scan-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sku-scan-row .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .form-feedback--pending {

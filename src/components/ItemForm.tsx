@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createItemAction, updateItemAction } from "@/actions/items";
 import { AddLocationForm } from "@/components/AddLocationForm";
+import { BarcodeScannerButton } from "@/components/BarcodeScannerButton";
 import type { Item, Location } from "@/generated/prisma/client";
 
 const UNITS = ["count", "mL", "g", "L", "kg", "bottle", "box", "pack"];
@@ -24,6 +25,7 @@ export function ItemForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [sku, setSku] = useState(item?.sku ?? "");
   const kind = item?.kind ?? defaultKind;
   const lockedIds = mode === "edit";
 
@@ -50,42 +52,50 @@ export function ItemForm({
       {mode === "edit" && item ? <input type="hidden" name="id" value={item.id} /> : null}
       <input type="hidden" name="kind" value={kind} />
 
-      <div className="field-row">
-        <div className="field">
-          <label htmlFor="sku">
-            SKU / barcode{" "}
-            {mode === "create" ? (
-              <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
-                (optional)
-              </span>
-            ) : null}
-          </label>
+      <div className="field">
+        <label htmlFor="sku">
+          SKU / barcode{" "}
+          {mode === "create" ? (
+            <span className="muted" style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>
+              (optional)
+            </span>
+          ) : null}
+        </label>
+        <div className="sku-scan-row">
           <input
             id="sku"
             name={lockedIds ? undefined : "sku"}
             required={false}
-            defaultValue={item?.sku ?? ""}
+            value={lockedIds ? item?.sku ?? "" : sku}
+            onChange={lockedIds ? undefined : (e) => setSku(e.target.value)}
             readOnly={lockedIds}
             className={lockedIds ? "is-locked" : undefined}
             placeholder={
               mode === "create"
                 ? kind === "CONSUMABLE"
-                  ? "Leave blank for next 2xxxx, or paste package barcode"
-                  : "Leave blank for next 1xxxx, or paste package barcode"
+                  ? "Leave blank for next 2xxxx, or scan / paste barcode"
+                  : "Leave blank for next 1xxxx, or scan / paste barcode"
                 : undefined
             }
           />
           {mode === "create" ? (
-            <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
-              Blank values are auto-assigned ({kind === "CONSUMABLE" ? "2…" : "1…"}).
-              The barcode is always set to the same value as the SKU.
-            </p>
-          ) : (
-            <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
-              Barcode matches SKU{item?.barcode && item.barcode !== item.sku ? ` (stored: ${item.barcode})` : ""}.
-            </p>
-          )}
+            <BarcodeScannerButton
+              label="Scan"
+              className="btn btn-ghost"
+              onScan={(code) => setSku(code)}
+            />
+          ) : null}
         </div>
+        {mode === "create" ? (
+          <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+            Blank values are auto-assigned ({kind === "CONSUMABLE" ? "2…" : "1…"}).
+            Scan a package barcode to use that as the SKU (barcode matches SKU).
+          </p>
+        ) : (
+          <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>
+            Barcode matches SKU{item?.barcode && item.barcode !== item.sku ? ` (stored: ${item.barcode})` : ""}.
+          </p>
+        )}
       </div>
 
       <div className="field">

@@ -5,14 +5,19 @@ import { useRouter } from "next/navigation";
 import type { Html5Qrcode } from "html5-qrcode";
 
 type Props = {
-  /** Path to navigate to with ?q=code, default /sign-out */
-  redirectTo?: string;
   label?: string;
+  /** Navigate here with ?q=code after a scan (sign-out flow) */
+  redirectTo?: string;
+  /** When set, call this with the scanned code instead of navigating */
+  onScan?: (code: string) => void;
+  className?: string;
 };
 
 export function BarcodeScannerButton({
   redirectTo = "/sign-out",
   label = "Scan barcode",
+  onScan,
+  className = "btn btn-primary",
 }: Props) {
   const router = useRouter();
   const scannerRegionId = useId().replace(/:/g, "");
@@ -21,6 +26,8 @@ export function BarcodeScannerButton({
   const [starting, setStarting] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const handledRef = useRef(false);
+  const onScanRef = useRef(onScan);
+  onScanRef.current = onScan;
 
   useEffect(() => {
     if (!open) return;
@@ -52,7 +59,11 @@ export function BarcodeScannerButton({
             const code = decodedText.trim();
             void stopScanner().then(() => {
               setOpen(false);
-              router.push(`${redirectTo}?q=${encodeURIComponent(code)}`);
+              if (onScanRef.current) {
+                onScanRef.current(code);
+              } else {
+                router.push(`${redirectTo}?q=${encodeURIComponent(code)}`);
+              }
             });
           },
           () => {
@@ -104,7 +115,7 @@ export function BarcodeScannerButton({
 
   return (
     <>
-      <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
+      <button type="button" className={className} onClick={() => setOpen(true)}>
         {label}
       </button>
 
