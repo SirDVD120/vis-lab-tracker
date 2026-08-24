@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Figtree, Fraunces } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { NavigationProgressHost } from "@/components/NavigationProgressHost";
 import { DisableNumberInputWheel } from "@/components/DisableNumberInputWheel";
@@ -50,6 +51,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <SiteHeader user={user} />
           {children}
         </div>
+        <Analytics />
       </body>
     </html>
   );
